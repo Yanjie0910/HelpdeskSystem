@@ -1,0 +1,13 @@
+package com.um.helpdesk;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+class HelpdeskSpringbootApplicationTests {
+
+	@Test
+	void contextLoads() {
+	}
+
+}
