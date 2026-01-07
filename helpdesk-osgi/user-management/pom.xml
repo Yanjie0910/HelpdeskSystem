@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.um.helpdesk.osgi</groupId>
+        <artifactId>osgi-helpdesk-parent</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>user-management</artifactId>
+    <packaging>bundle</packaging>
+
+    <name>UM Helpdesk OSGi - User Management Component</name>
+    <description>User Management business functionality implementation</description>
+
+    <dependencies>
+        <!-- Base Library Bundle (entities + service interface) -->
+        <dependency>
+            <groupId>com.um.helpdesk.osgi</groupId>
+            <artifactId>base-library</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- OSGi Core -->
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>osgi.core</artifactId>
+        </dependency>
+
+        <!-- JPA API -->
+        <dependency>
+            <groupId>javax.persistence</groupId>
+            <artifactId>javax.persistence-api</artifactId>
+        </dependency>
+
+        <!-- Hibernate Core -->
+        <dependency>
+            <groupId>org.hibernate</groupId>
+            <artifactId>hibernate-core</artifactId>
+        </dependency>
+
+        <!-- H2 Database -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <configuration>
+                    <instructions>
+                        <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
+                        <Bundle-Name>${project.name}</Bundle-Name>
+                        <Bundle-Version>${project.version}</Bundle-Version>
+                        <Bundle-Activator>com.um.helpdesk.usermgmt.Activator</Bundle-Activator>
+                        
+                        <!-- Private packages (implementation details) -->
+                        <Private-Package>
+                            com.um.helpdesk.usermgmt.impl,
+                            com.um.helpdesk.usermgmt.repository
+                        </Private-Package>
+                        
+                        <!-- Import packages from Base Library and others -->
+                        <Import-Package>
+                            com.um.helpdesk.entity,
+                            com.um.helpdesk.service,
+                            javax.persistence;version="[2.2,3)",
+                            org.hibernate*;version="[5.6,6)",
+                            org.osgi.framework;version="[1.9,2)",
+                            org.osgi.service.component.annotations;version="[1.3,2)",
+                            *
+                        </Import-Package>
+                        
+                        <!-- Embed H2 database -->
+                        <Embed-Dependency>h2</Embed-Dependency>
+                    </instructions>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
