@@ -13,18 +13,20 @@ public class MainMenuRunner implements CommandLineRunner {
 
     private final UserService userService;
     private final UserManagementConsoleRunner userModule;
+    private final NotificationConsoleRunner notificationModule;
     // private final TicketSubmissionConsoleRunner ticketModule;
-    // private final NotificationConsoleRunner notificationModule;
 
     private User currentUser = null;
 
     public MainMenuRunner(
         UserService userService,
-        UserManagementConsoleRunner userModule
+        UserManagementConsoleRunner userModule,
+        NotificationConsoleRunner notificationModule
         // Add other modules here when ready
     ) {
         this.userService = userService;
         this.userModule = userModule;
+        this.notificationModule = notificationModule;
     }
 
     @Override
@@ -131,7 +133,7 @@ public class MainMenuRunner implements CommandLineRunner {
         System.out.println("1. User Management Module                                  ");
         System.out.println("2. Reporting Module                                        ");
         System.out.println("3. View All Tickets (Admin View)                           ");
-        System.out.println("4. Notification Settings                                   ");
+        System.out.println("4. Notification Module                                     ");
     }
 
     private boolean handleAdminMenu(int choice, Scanner sc) {
@@ -139,7 +141,7 @@ public class MainMenuRunner implements CommandLineRunner {
             case 1 -> userModule.runUserManagement(sc, currentUser);
             case 2 -> System.out.println("\nReporting Module (teammate will implement)\n");
             case 3 -> System.out.println("\nView All Tickets (teammate will implement)\n");
-            case 4 -> System.out.println("\nNotification Settings (teammate will implement)\n");
+            case 4 -> notificationModule.runNotificationManagement(sc, currentUser);
             case 0 -> {
                 return false;  // Exit
             }
@@ -164,7 +166,7 @@ public class MainMenuRunner implements CommandLineRunner {
             case 1 -> System.out.println("\nLodge Ticket (teammate will implement)\n");
             case 2 -> System.out.println("\nMy Tickets (teammate will implement)\n");
             case 3 -> viewMyProfile();
-            case 4 -> System.out.println("\nNotifications (teammate will implement)\n");
+            case 4 -> notificationModule.runNotificationManagement(sc, currentUser);
             case 0 -> {
                 return false;  // Exit
             }
@@ -191,7 +193,7 @@ public class MainMenuRunner implements CommandLineRunner {
             case 2 -> System.out.println("\nClaim Ticket (teammate will implement)\n");
             case 3 -> System.out.println("\nTransfer Ticket (teammate will implement)\n");
             case 4 -> viewMyProfile();
-            case 5 -> System.out.println("\nNotifications (teammate will implement)\n");
+            case 5 -> notificationModule.runNotificationManagement(sc, currentUser);
             case 0 -> {
                 return false;  // Exit
             }
