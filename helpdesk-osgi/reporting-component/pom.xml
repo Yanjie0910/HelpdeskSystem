@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.um.helpdesk.osgi</groupId>
+        <artifactId>osgi-helpdesk-parent</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>reporting-component</artifactId>
+    <packaging>bundle</packaging>
+
+    <name>UM Helpdesk OSGi - Reporting Component</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.um.helpdesk.osgi</groupId>
+            <artifactId>base-library</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>osgi.core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>javax.persistence</groupId>
+            <artifactId>javax.persistence-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate</groupId>
+            <artifactId>hibernate-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <configuration>
+                    <instructions>
+                        <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
+                        <Bundle-Activator>com.um.helpdesk.reporting.Activator</Bundle-Activator>
+                        <Private-Package>
+                            com.um.helpdesk.reporting.impl,
+                            com.um.helpdesk.reporting.controller
+                        </Private-Package>
+                        <Import-Package>
+                            com.um.helpdesk.entity,
+                            com.um.helpdesk.service,
+                            javax.persistence;version="[2.2,3)",
+                            org.hibernate*;version="[5.6,6)",
+                            org.osgi.framework;version="[1.9,2)",
+                            *
+                        </Import-Package>
+                        <Embed-Dependency>h2</Embed-Dependency>
+                    </instructions>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
