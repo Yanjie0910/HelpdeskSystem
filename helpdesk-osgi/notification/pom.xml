@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -11,10 +11,10 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>user-management</artifactId>
+    <artifactId>notification</artifactId>
     <packaging>bundle</packaging>
 
-    <name>UM Helpdesk OSGi - User Management Component</name>
+    <name>UM Helpdesk OSGi - Notification Component</name>
 
     <dependencies>
         <dependency>
@@ -51,21 +51,20 @@
                 <configuration>
                     <instructions>
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
-                        <Bundle-Activator>com.um.helpdesk.usermgmt.Activator</Bundle-Activator>
+                        <Bundle-Activator>com.um.helpdesk.notification.Activator</Bundle-Activator>
 
                         <Meta-Persistence>META-INF/persistence.xml</Meta-Persistence>
 
                         <Private-Package>
-                            com.um.helpdesk.usermgmt.impl,
-                            com.um.helpdesk.usermgmt.repository
+                            com.um.helpdesk.notification.impl,
+                            com.um.helpdesk.notification.repository
                         </Private-Package>
 
                         <Import-Package>
-                            !com.um.helpdesk.usermgmt.repository,
+                            !com.um.helpdesk.notification.repository,
 
                             !com.sun.management,
                             !com.sun.tools.javac,
-
                             !org.codehaus.groovy.*,
 
                             org.hibernate.proxy,
@@ -86,3 +85,4 @@
         </plugins>
     </build>
 </project>
+

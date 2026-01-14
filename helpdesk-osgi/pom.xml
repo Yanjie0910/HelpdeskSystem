@@ -16,6 +16,7 @@
     <modules>
         <module>base-library</module>
         <module>user-management</module>
+        <module>notification</module>
     </modules>
 
     <properties>
