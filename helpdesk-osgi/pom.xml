@@ -16,7 +16,7 @@
     <modules>
         <module>base-library</module>
         <module>user-management</module>
-        <module>notification</module>
+        <module>reporting-component</module>
     </modules>
 
     <properties>
