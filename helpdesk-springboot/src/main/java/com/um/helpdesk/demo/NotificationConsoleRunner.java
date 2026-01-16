@@ -84,8 +84,14 @@ public class NotificationConsoleRunner {
                 case 3 -> markAsRead(sc, currentUser);
                 case 4 -> markAllAsRead(currentUser);
                 case 5 -> deleteNotification(sc, currentUser);
-                case 6 -> { if (isAdmin) viewAllNotifications(); }
-                case 7 -> { if (isAdmin) createTestNotification(sc, currentUser); }
+                case 6 -> {
+                    if (isAdmin)
+                        viewAllNotifications();
+                }
+                case 7 -> {
+                    if (isAdmin)
+                        createTestNotification(sc, currentUser);
+                }
                 case 0 -> back = true;
                 default -> System.out.println("\n❌ Invalid option.\n");
             }
@@ -108,18 +114,17 @@ public class NotificationConsoleRunner {
         System.out.println("📬 Total: " + notifications.size() + " | Unread: " + unreadCount + "\n");
 
         System.out.println(String.format("%-5s %-10s %-30s %-15s %-12s",
-            "ID", "Status", "Title", "Type", "Created"));
+                "ID", "Status", "Title", "Type", "Created"));
         System.out.println("─".repeat(80));
 
         for (Notification n : notifications) {
             String statusIcon = n.isRead() ? "✓" : "●";
             System.out.println(String.format("%-5d %-10s %-30s %-15s %-12s",
-                n.getId(),
-                statusIcon + " " + n.getStatus(),
-                truncate(n.getTitle(), 28),
-                n.getType(),
-                n.getCreatedAt().toLocalDate().toString()
-            ));
+                    n.getId(),
+                    statusIcon + " " + n.getStatus(),
+                    truncate(n.getTitle(), 28),
+                    n.getType(),
+                    n.getCreatedAt().toLocalDate().toString()));
         }
         System.out.println();
     }
@@ -150,13 +155,34 @@ public class NotificationConsoleRunner {
     }
 
     private void markAsRead(Scanner sc, User user) {
+        // Show user's unread notifications first
+        var unreadNotifications = notificationService.getUnreadNotifications(user.getId());
+
+        if (unreadNotifications.isEmpty()) {
+            System.out.println("\n✅ No unread notifications.\n");
+            return;
+        }
+
+        System.out.println("\n📝 Your Unread Notifications:");
+        System.out.println("════════════════════════════════════════════════════════");
+        for (var notif : unreadNotifications) {
+            System.out.printf("ID: %d | %s | Priority: %s | Date: %s%n",
+                    notif.getId(),
+                    notif.getTitle(),
+                    notif.getPriority(),
+                    notif.getCreatedAt());
+        }
+        System.out.println("════════════════════════════════════════════════════════");
+
         System.out.print("\n📝 Enter Notification ID to mark as read: ");
-        Long id = sc.nextLong();
-        sc.nextLine();
+        String input = sc.nextLine();
 
         try {
+            Long id = Long.parseLong(input);
             notificationService.markAsRead(id);
             System.out.println("✅ Notification marked as read!\n");
+        } catch (NumberFormatException e) {
+            System.out.println("❌ Error: Invalid notification ID. Please enter a numeric ID.\n");
         } catch (RuntimeException e) {
             System.out.println("❌ " + e.getMessage() + "\n");
         }
@@ -172,22 +198,46 @@ public class NotificationConsoleRunner {
     }
 
     private void deleteNotification(Scanner sc, User user) {
+        // Show user's notifications first
+        var userNotifications = notificationService.getNotificationsByUser(user.getId());
+
+        if (userNotifications.isEmpty()) {
+            System.out.println("\n❌ No notifications available to delete.\n");
+            return;
+        }
+
+        System.out.println("\n🗑️ Your Notifications:");
+        System.out.println("════════════════════════════════════════════════════════");
+        for (var notif : userNotifications) {
+            System.out.printf("ID: %d | %s | Status: %s | Date: %s%n",
+                    notif.getId(),
+                    notif.getTitle(),
+                    notif.getStatus(),
+                    notif.getCreatedAt());
+        }
+        System.out.println("════════════════════════════════════════════════════════");
+
         System.out.print("\n🗑️ Enter Notification ID to delete: ");
-        Long id = sc.nextLong();
-        sc.nextLine();
+        String input = sc.nextLine();
 
-        System.out.print("⚠️ Are you sure? (yes/no): ");
-        String confirm = sc.nextLine();
+        try {
+            Long id = Long.parseLong(input);
 
-        if (confirm.equalsIgnoreCase("yes")) {
-            try {
-                notificationService.deleteNotification(id);
-                System.out.println("✅ Notification deleted!\n");
-            } catch (RuntimeException e) {
-                System.out.println("❌ " + e.getMessage() + "\n");
+            System.out.print("⚠️ Are you sure? (yes/no): ");
+            String confirm = sc.nextLine();
+
+            if (confirm.equalsIgnoreCase("yes")) {
+                try {
+                    notificationService.deleteNotification(id);
+                    System.out.println("✅ Notification deleted!\n");
+                } catch (RuntimeException e) {
+                    System.out.println("❌ " + e.getMessage() + "\n");
+                }
+            } else {
+                System.out.println("❌ Deletion cancelled.\n");
             }
-        } else {
-            System.out.println("❌ Deletion cancelled.\n");
+        } catch (NumberFormatException e) {
+            System.out.println("❌ Error: Invalid notification ID. Please enter a numeric ID.\n");
         }
     }
 
@@ -206,17 +256,16 @@ public class NotificationConsoleRunner {
         System.out.println("📬 Total notifications: " + notifications.size() + "\n");
 
         System.out.println(String.format("%-5s %-20s %-30s %-15s %-10s",
-            "ID", "Recipient", "Title", "Type", "Status"));
+                "ID", "Recipient", "Title", "Type", "Status"));
         System.out.println("─".repeat(90));
 
         for (Notification n : notifications) {
             System.out.println(String.format("%-5d %-20s %-30s %-15s %-10s",
-                n.getId(),
-                truncate(n.getRecipient().getFullName(), 18),
-                truncate(n.getTitle(), 28),
-                n.getType(),
-                n.getStatus()
-            ));
+                    n.getId(),
+                    truncate(n.getRecipient().getFullName(), 18),
+                    truncate(n.getTitle(), 28),
+                    n.getType(),
+                    n.getStatus()));
         }
         System.out.println();
     }
@@ -225,8 +274,7 @@ public class NotificationConsoleRunner {
         System.out.println("\n--- CREATE TEST NOTIFICATION ---");
 
         System.out.print("Recipient User ID: ");
-        Long userId = sc.nextLong();
-        sc.nextLine();
+        String userInput = sc.nextLine();
 
         System.out.print("Title: ");
         String title = sc.nextLine();
@@ -235,20 +283,24 @@ public class NotificationConsoleRunner {
         String message = sc.nextLine();
 
         System.out.println("Priority (1=LOW, 2=NORMAL, 3=HIGH, 4=URGENT): ");
-        int priorityChoice = sc.nextInt();
-        sc.nextLine();
-
-        NotificationPriority priority = switch (priorityChoice) {
-            case 1 -> NotificationPriority.LOW;
-            case 2 -> NotificationPriority.NORMAL;
-            case 3 -> NotificationPriority.HIGH;
-            case 4 -> NotificationPriority.URGENT;
-            default -> NotificationPriority.NORMAL;
-        };
+        String priorityInput = sc.nextLine();
 
         try {
+            Long userId = Long.parseLong(userInput);
+            int priorityChoice = Integer.parseInt(priorityInput);
+
+            NotificationPriority priority = switch (priorityChoice) {
+                case 1 -> NotificationPriority.LOW;
+                case 2 -> NotificationPriority.NORMAL;
+                case 3 -> NotificationPriority.HIGH;
+                case 4 -> NotificationPriority.URGENT;
+                default -> NotificationPriority.NORMAL;
+            };
+
             notificationService.sendTicketSubmittedNotification(999L, userId);
             System.out.println("✅ Test notification created and sent!\n");
+        } catch (NumberFormatException e) {
+            System.out.println("❌ Error: Please enter valid numeric values.\n");
         } catch (Exception e) {
             System.out.println("❌ Error: " + e.getMessage() + "\n");
         }
@@ -283,14 +335,17 @@ public class NotificationConsoleRunner {
 
     private void simulateTicketSubmitted(Scanner sc) {
         System.out.print("\n📝 Enter Ticket ID: ");
-        Long ticketId = sc.nextLong();
+        String ticketInput = sc.nextLine();
         System.out.print("Enter User ID: ");
-        Long userId = sc.nextLong();
-        sc.nextLine();
+        String userInput = sc.nextLine();
 
         try {
+            Long ticketId = Long.parseLong(ticketInput);
+            Long userId = Long.parseLong(userInput);
             notificationService.sendTicketSubmittedNotification(ticketId, userId);
             System.out.println("✅ Ticket submitted notification sent!\n");
+        } catch (NumberFormatException e) {
+            System.out.println("❌ Error: Please enter valid numeric IDs.\n");
         } catch (Exception e) {
             System.out.println("❌ Error: " + e.getMessage() + "\n");
         }
@@ -298,14 +353,17 @@ public class NotificationConsoleRunner {
 
     private void simulateTicketAssigned(Scanner sc) {
         System.out.print("\n📝 Enter Ticket ID: ");
-        Long ticketId = sc.nextLong();
+        String ticketInput = sc.nextLine();
         System.out.print("Enter Technician ID: ");
-        Long techId = sc.nextLong();
-        sc.nextLine();
+        String techInput = sc.nextLine();
 
         try {
+            Long ticketId = Long.parseLong(ticketInput);
+            Long techId = Long.parseLong(techInput);
             notificationService.sendTicketAssignedNotification(ticketId, techId);
             System.out.println("✅ Ticket assigned notification sent!\n");
+        } catch (NumberFormatException e) {
+            System.out.println("❌ Error: Please enter valid numeric IDs.\n");
         } catch (Exception e) {
             System.out.println("❌ Error: " + e.getMessage() + "\n");
         }
@@ -313,16 +371,18 @@ public class NotificationConsoleRunner {
 
     private void simulateTicketStatusChanged(Scanner sc) {
         System.out.print("\n📝 Enter Ticket ID: ");
-        Long ticketId = sc.nextLong();
-        sc.nextLine();
+        String ticketInput = sc.nextLine();
         System.out.print("Old Status: ");
         String oldStatus = sc.nextLine();
         System.out.print("New Status: ");
         String newStatus = sc.nextLine();
 
         try {
+            Long ticketId = Long.parseLong(ticketInput);
             notificationService.sendTicketStatusChangedNotification(ticketId, oldStatus, newStatus);
             System.out.println("✅ Status changed notification sent!\n");
+        } catch (NumberFormatException e) {
+            System.out.println("❌ Error: Please enter a valid numeric Ticket ID.\n");
         } catch (Exception e) {
             System.out.println("❌ Error: " + e.getMessage() + "\n");
         }
@@ -330,14 +390,17 @@ public class NotificationConsoleRunner {
 
     private void simulateTicketResolved(Scanner sc) {
         System.out.print("\n📝 Enter Ticket ID: ");
-        Long ticketId = sc.nextLong();
+        String ticketInput = sc.nextLine();
         System.out.print("Enter User ID: ");
-        Long userId = sc.nextLong();
-        sc.nextLine();
+        String userInput = sc.nextLine();
 
         try {
+            Long ticketId = Long.parseLong(ticketInput);
+            Long userId = Long.parseLong(userInput);
             notificationService.sendTicketResolvedNotification(ticketId, userId);
             System.out.println("✅ Ticket resolved notification sent!\n");
+        } catch (NumberFormatException e) {
+            System.out.println("❌ Error: Please enter valid numeric IDs.\n");
         } catch (Exception e) {
             System.out.println("❌ Error: " + e.getMessage() + "\n");
         }
@@ -345,14 +408,17 @@ public class NotificationConsoleRunner {
 
     private void simulateTicketReopened(Scanner sc) {
         System.out.print("\n📝 Enter Ticket ID: ");
-        Long ticketId = sc.nextLong();
+        String ticketInput = sc.nextLine();
         System.out.print("Enter Technician ID: ");
-        Long techId = sc.nextLong();
-        sc.nextLine();
+        String techInput = sc.nextLine();
 
         try {
+            Long ticketId = Long.parseLong(ticketInput);
+            Long techId = Long.parseLong(techInput);
             notificationService.sendTicketReopenedNotification(ticketId, techId);
             System.out.println("✅ Ticket reopened notification sent!\n");
+        } catch (NumberFormatException e) {
+            System.out.println("❌ Error: Please enter valid numeric IDs.\n");
         } catch (Exception e) {
             System.out.println("❌ Error: " + e.getMessage() + "\n");
         }
@@ -383,14 +449,17 @@ public class NotificationConsoleRunner {
 
     private void sendReminder(Scanner sc) {
         System.out.print("\n⏰ Enter Ticket ID: ");
-        Long ticketId = sc.nextLong();
+        String ticketInput = sc.nextLine();
         System.out.print("Enter Technician ID: ");
-        Long techId = sc.nextLong();
-        sc.nextLine();
+        String techInput = sc.nextLine();
 
         try {
+            Long ticketId = Long.parseLong(ticketInput);
+            Long techId = Long.parseLong(techInput);
             notificationService.sendReminderNotification(ticketId, techId);
             System.out.println("✅ Reminder notification sent!\n");
+        } catch (NumberFormatException e) {
+            System.out.println("❌ Error: Please enter valid numeric IDs.\n");
         } catch (Exception e) {
             System.out.println("❌ Error: " + e.getMessage() + "\n");
         }
@@ -398,16 +467,20 @@ public class NotificationConsoleRunner {
 
     private void sendEscalation(Scanner sc) {
         System.out.print("\n⚠️ Enter Ticket ID: ");
-        Long ticketId = sc.nextLong();
+        String ticketInput = sc.nextLine();
         System.out.print("Enter Supervisor ID: ");
-        Long supervisorId = sc.nextLong();
+        String supervisorInput = sc.nextLine();
         System.out.print("Escalation Level (1=Tech, 2=Supervisor, 3=Admin): ");
-        int level = sc.nextInt();
-        sc.nextLine();
+        String levelInput = sc.nextLine();
 
         try {
+            Long ticketId = Long.parseLong(ticketInput);
+            Long supervisorId = Long.parseLong(supervisorInput);
+            int level = Integer.parseInt(levelInput);
             notificationService.sendEscalationNotification(ticketId, supervisorId, level);
             System.out.println("✅ Escalation notification sent!\n");
+        } catch (NumberFormatException e) {
+            System.out.println("❌ Error: Please enter valid numeric values.\n");
         } catch (Exception e) {
             System.out.println("❌ Error: " + e.getMessage() + "\n");
         }
@@ -443,16 +516,38 @@ public class NotificationConsoleRunner {
     }
 
     private void updateDeliveryStatus(Scanner sc) {
-        System.out.print("\n📋 Enter Notification ID: ");
-        Long id = sc.nextLong();
-        sc.nextLine();
+        // Show available notifications first
+        var allNotifications = notificationService.getAllNotifications();
 
-        System.out.print("Enter Status (SENT/DELIVERED/READ/FAILED): ");
-        String status = sc.nextLine();
+        if (allNotifications.isEmpty()) {
+            System.out.println("\n❌ No notifications available.\n");
+            return;
+        }
+
+        System.out.println("\n📋 Available Notifications:");
+        System.out.println("════════════════════════════════════════════════════════");
+        for (var notif : allNotifications) {
+            System.out.printf("ID: %d | %s | Status: %s | User: %s%n",
+                    notif.getId(),
+                    notif.getTitle(),
+                    notif.getDeliveryStatus(),
+                    notif.getRecipient().getFullName());
+        }
+        System.out.println("════════════════════════════════════════════════════════");
+
+        System.out.print("\n📋 Enter Notification ID: ");
+        String input = sc.nextLine();
 
         try {
+            Long id = Long.parseLong(input);
+
+            System.out.print("Enter Status (SENT/DELIVERED/READ/FAILED): ");
+            String status = sc.nextLine();
+
             notificationService.updateDeliveryStatus(id, status);
             System.out.println("✅ Delivery status updated!\n");
+        } catch (NumberFormatException e) {
+            System.out.println("❌ Error: Invalid notification ID. Please enter a numeric ID.\n");
         } catch (Exception e) {
             System.out.println("❌ Error: " + e.getMessage() + "\n");
         }
@@ -471,7 +566,8 @@ public class NotificationConsoleRunner {
     }
 
     private String truncate(String str, int length) {
-        if (str == null) return "N/A";
+        if (str == null)
+            return "N/A";
         return str.length() > length ? str.substring(0, length - 3) + "..." : str;
     }
 }
