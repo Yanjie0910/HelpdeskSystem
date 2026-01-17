@@ -276,7 +276,29 @@ public class NotificationConsoleRunner {
     private void createTestNotification(Scanner sc, User currentUser) {
         System.out.println("\n--- CREATE TEST NOTIFICATION ---");
 
-        System.out.print("Recipient User ID: ");
+        // Show available users first
+        var allUsers = userRepository.findAll();
+
+        if (allUsers.isEmpty()) {
+            System.out.println("❌ No users found in system.\n");
+            return;
+        }
+
+        System.out.println("\n📋 Available Users:");
+        System.out.println("════════════════════════════════════════════════════════════════════");
+        System.out.println(String.format("%-5s %-25s %-30s %-15s", "ID", "Name", "Email", "Role"));
+        System.out.println("────────────────────────────────────────────────────────────────────");
+
+        for (User u : allUsers) {
+            System.out.println(String.format("%-5d %-25s %-30s %-15s",
+                u.getId(),
+                truncate(u.getFullName(), 23),
+                truncate(u.getEmail(), 28),
+                u.getRole()));
+        }
+        System.out.println("════════════════════════════════════════════════════════════════════\n");
+
+        System.out.print("📝 Recipient User ID: ");
         String userInput = sc.nextLine();
 
         System.out.print("Title: ");
