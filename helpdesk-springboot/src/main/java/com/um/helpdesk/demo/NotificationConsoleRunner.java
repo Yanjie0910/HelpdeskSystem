@@ -4,14 +4,17 @@ import java.util.Scanner;
 import org.springframework.stereotype.Component;
 import com.um.helpdesk.entity.*;
 import com.um.helpdesk.service.NotificationService;
+import com.um.helpdesk.repository.UserRepository;
 
 @Component
 public class NotificationConsoleRunner {
 
     private final NotificationService notificationService;
+    private final UserRepository userRepository;
 
-    public NotificationConsoleRunner(NotificationService notificationService) {
+    public NotificationConsoleRunner(NotificationService notificationService, UserRepository userRepository) {
         this.notificationService = notificationService;
+        this.userRepository = userRepository;
     }
 
     public void runNotificationManagement(Scanner sc, User currentUser) {
@@ -297,8 +300,24 @@ public class NotificationConsoleRunner {
                 default -> NotificationPriority.NORMAL;
             };
 
-            notificationService.sendTicketSubmittedNotification(999L, userId);
-            System.out.println("✅ Test notification created and sent!\n");
+            // Fetch the user
+            User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+
+            // Create custom notification object using user's inputs
+            Notification notification = new Notification();
+            notification.setRecipient(user);
+            notification.setTitle(title);              // Use custom title
+            notification.setMessage(message);          // Use custom message
+            notification.setPriority(priority);        // Use selected priority
+            notification.setType(NotificationType.GENERAL);
+            notification.setEventType("CUSTOM_TEST");
+
+            // Create and send
+            Notification created = notificationService.createNotification(notification);
+            notificationService.sendNotification(created.getId(), DeliveryChannel.IN_APP);
+
+            System.out.println("✅ Custom notification created and sent to user!\n");
         } catch (NumberFormatException e) {
             System.out.println("❌ Error: Please enter valid numeric values.\n");
         } catch (Exception e) {
