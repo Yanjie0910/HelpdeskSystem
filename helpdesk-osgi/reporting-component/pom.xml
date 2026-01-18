@@ -17,24 +17,31 @@
     <name>UM Helpdesk OSGi - Reporting Component</name>
 
     <dependencies>
+        <!-- 共享实体与服务接口：由 base-library export -->
         <dependency>
             <groupId>com.um.helpdesk.osgi</groupId>
             <artifactId>base-library</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
         </dependency>
+
         <dependency>
             <groupId>org.osgi</groupId>
             <artifactId>osgi.core</artifactId>
         </dependency>
+
+        <!-- 这些依赖用于编译（你代码里可能有引用）
+             但运行期不强绑到 OSGi Import-Package 上，避免 Karaf 无底洞补包 -->
         <dependency>
             <groupId>javax.persistence</groupId>
             <artifactId>javax.persistence-api</artifactId>
         </dependency>
+
         <dependency>
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-core</artifactId>
         </dependency>
+
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
@@ -46,23 +53,35 @@
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
+                <extensions>true</extensions>
                 <configuration>
                     <instructions>
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Bundle-Activator>com.um.helpdesk.reporting.Activator</Bundle-Activator>
+
                         <Private-Package>
                             com.um.helpdesk.reporting.impl,
                             com.um.helpdesk.reporting.controller
                         </Private-Package>
+
+                        <!-- 关键：不要强制导入会把你拖进地狱的包 -->
                         <Import-Package>
-                            com.um.helpdesk.entity,
-                            com.um.helpdesk.service,
-                            javax.persistence;version="[2.2,3)",
-                            org.hibernate*;version="[5.6,6)",
+                            !com.sun.management,
+                            !org.apache.lucene.*,
+
+                            com.um.helpdesk.entity;version="[1.0,2)",
+                            com.um.helpdesk.service;version="[1.0,2)",
+
                             org.osgi.framework;version="[1.9,2)",
+
+                            javax.persistence;resolution:=optional;version="[2.2,3)",
+                            org.hibernate.*;resolution:=optional;version="[5.6,6)",
+
                             *
                         </Import-Package>
-                        <Embed-Dependency>h2</Embed-Dependency>
+
+                        <!-- 先不要 Embed H2：OSGi/Karaf 对 multi-release jar 很容易报 warning/resolve 问题 -->
+                        <!-- <Embed-Dependency>h2</Embed-Dependency> -->
                     </instructions>
                 </configuration>
             </plugin>

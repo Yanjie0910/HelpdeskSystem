@@ -2,6 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -11,10 +12,10 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>user-management</artifactId>
+    <artifactId>ticket-submission</artifactId>
     <packaging>bundle</packaging>
 
-    <name>UM Helpdesk OSGi - User Management Component</name>
+    <name>UM Helpdesk OSGi - Ticket Submission Component</name>
 
     <dependencies>
         <dependency>
@@ -30,17 +31,10 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- compile only; runtime optional -->
         <dependency>
             <groupId>javax.persistence</groupId>
             <artifactId>javax.persistence-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.hibernate</groupId>
-            <artifactId>hibernate-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
         </dependency>
     </dependencies>
 
@@ -53,31 +47,22 @@
                 <configuration>
                     <instructions>
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
-                        <Bundle-Activator>com.um.helpdesk.usermgmt.Activator</Bundle-Activator>
-
-                        <Meta-Persistence>META-INF/persistence.xml</Meta-Persistence>
+                        <Bundle-Activator>com.um.helpdesk.ticketsubmission.Activator</Bundle-Activator>
 
                         <Private-Package>
-                            com.um.helpdesk.usermgmt.impl,
-                            com.um.helpdesk.usermgmt.repository
+                            com.um.helpdesk.ticketsubmission.impl
                         </Private-Package>
 
                         <Import-Package>
-                            !com.um.helpdesk.usermgmt.repository,
-
                             !com.sun.management,
                             !com.sun.tools.javac,
                             !org.codehaus.groovy.*,
-
-                            !org.apache.lucene.*,
-                            !com.ibm.icu.*,
 
                             com.um.helpdesk.entity;version="[1.0,2)",
                             com.um.helpdesk.service;version="[1.0,2)",
                             org.osgi.framework;version="[1.9,2)",
 
                             javax.persistence;resolution:=optional;version="[2.2,3)",
-                            org.hibernate.*;resolution:=optional;version="[5.6,6)",
 
                             *
                         </Import-Package>
@@ -86,4 +71,5 @@
             </plugin>
         </plugins>
     </build>
+
 </project>

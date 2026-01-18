@@ -17,6 +17,7 @@
         <module>base-library</module>
         <module>user-management</module>
         <module>reporting-component</module>
+        <module>ticket-submission</module>
     </modules>
 
     <properties>

@@ -67,8 +67,9 @@
                             !com.sun.tools.javac,
                             !org.codehaus.groovy.*,
 
-                            org.hibernate.proxy,
-                            javassist.util.proxy,
+                            org.hibernate.proxy;resolution:=optional,
+                            javassist.util.proxy;resolution:=optional,
+
 
                             com.um.helpdesk.entity,
                             com.um.helpdesk.service,
