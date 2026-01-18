@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.um.helpdesk.osgi</groupId>
@@ -17,6 +16,7 @@
         <module>base-library</module>
         <module>user-management</module>
         <module>reporting-component</module>
+        <module>notification-component</module>
         <module>application-component</module>
     </modules>
 
@@ -24,11 +24,11 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        
+
         <!-- OSGi versions -->
         <osgi.version>8.0.0</osgi.version>
         <felix.version>7.0.5</felix.version>
-        
+
         <!-- JPA/Hibernate versions -->
         <hibernate.version>5.6.15.Final</hibernate.version>
         <h2.version>2.1.214</h2.version>

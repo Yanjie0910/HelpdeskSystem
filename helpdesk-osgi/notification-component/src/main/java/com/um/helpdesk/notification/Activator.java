@@ -35,10 +35,14 @@ public class Activator implements BundleActivator {
 
                 NotificationServiceImpl serviceImpl = new NotificationServiceImpl(em);
 
-                Dictionary<String, String> props = new Hashtable<>();
-                props.put("component", "notification");
-                serviceRegistration = context.registerService(NotificationService.class, serviceImpl, props);
-                System.out.println(">>> OSGi: NotificationService registered.");
+                if (context != null) {
+                    Dictionary<String, String> props = new Hashtable<>();
+                    props.put("component", "notification");
+                    serviceRegistration = context.registerService(NotificationService.class, serviceImpl, props);
+                    System.out.println(">>> OSGi: NotificationService registered.");
+                } else {
+                    System.out.println(">>> Running in standalone mode (no OSGi context).");
+                }
 
                 runConsoleDemo(serviceImpl);
 
@@ -122,8 +126,7 @@ public class Activator implements BundleActivator {
         list.forEach(n -> System.out.println(
                 "#" + n.getId() + " [" + n.getType() + "] " + n.getTitle() +
                         " => status=" + n.getStatus() + ", recipientId=" +
-                        (n.getRecipient() != null ? n.getRecipient().getId() : null)
-        ));
+                        (n.getRecipient() != null ? n.getRecipient().getId() : null)));
     }
 
     private void showStats(NotificationService service) {
@@ -139,7 +142,7 @@ public class Activator implements BundleActivator {
             System.out.print("Enter Ticket ID: ");
             Long ticketId = sc.nextLong();
             sc.nextLine();
-            
+
             service.sendTicketSubmittedNotification(ticketId, userId);
             System.out.println("✓ Ticket Submitted notification sent successfully!");
         } catch (Exception e) {
@@ -155,7 +158,7 @@ public class Activator implements BundleActivator {
             System.out.print("Enter Ticket ID: ");
             Long ticketId = sc.nextLong();
             sc.nextLine();
-            
+
             service.sendTicketAssignedNotification(ticketId, technicianId);
             System.out.println("✓ Ticket Assigned notification sent successfully!");
         } catch (Exception e) {
@@ -171,7 +174,7 @@ public class Activator implements BundleActivator {
             System.out.print("Enter Ticket ID: ");
             Long ticketId = sc.nextLong();
             sc.nextLine();
-            
+
             service.sendTicketResolvedNotification(ticketId, userId);
             System.out.println("✓ Ticket Resolved notification sent successfully!");
         } catch (Exception e) {
@@ -187,7 +190,7 @@ public class Activator implements BundleActivator {
             System.out.print("Enter Ticket ID: ");
             Long ticketId = sc.nextLong();
             sc.nextLine();
-            
+
             service.sendReminderNotification(ticketId, technicianId);
             System.out.println("✓ Reminder notification sent successfully!");
         } catch (Exception e) {
@@ -200,7 +203,7 @@ public class Activator implements BundleActivator {
             System.out.print("Enter Notification ID to mark as read: ");
             Long notificationId = sc.nextLong();
             sc.nextLine();
-            
+
             service.markAsRead(notificationId);
             System.out.println("✓ Notification marked as read!");
         } catch (Exception e) {
@@ -208,4 +211,3 @@ public class Activator implements BundleActivator {
         }
     }
 }
-
