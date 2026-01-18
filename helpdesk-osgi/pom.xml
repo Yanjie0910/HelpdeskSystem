@@ -17,6 +17,7 @@
         <module>user-management</module>
         <module>reporting-component</module>
         <module>notification-component</module>
+        <module>application-component</module>
     </modules>
 
     <properties>
