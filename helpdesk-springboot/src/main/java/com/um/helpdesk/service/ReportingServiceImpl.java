@@ -5,6 +5,7 @@ import com.um.helpdesk.entity.Ticket;
 import com.um.helpdesk.entity.TicketPriority;
 import com.um.helpdesk.entity.TicketStatus;
 import com.um.helpdesk.repository.SavedReportRepository;
+import com.um.helpdesk.repository.TicketRepository; // IMPORTED
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +16,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ReportingServiceImpl implements ReportingService {
@@ -22,150 +24,181 @@ public class ReportingServiceImpl implements ReportingService {
     @Autowired
     private SavedReportRepository reportRepository;
 
-    // MOCK DATA (Same as OSGi to ensure consistent stats)
-    private final List<Ticket> mockTickets = new ArrayList<>();
+    @Autowired
+    private TicketRepository ticketRepository; // INJECTED REAL REPOSITORY
 
-    public ReportingServiceImpl() {
-        initializeMockTickets();
-    }
-
-    private void initializeMockTickets() {
-        LocalDateTime now = LocalDateTime.now();
-        // Exact same scenarios as your OSGi component
-        createMockTicket("WiFi Down", TicketPriority.MEDIUM, TicketStatus.CLOSED, now.minusWeeks(3));
-        createMockTicket("PC Restarting", TicketPriority.LOW, TicketStatus.CLOSED, now.minusWeeks(3));
-        createMockTicket("Server Crash", TicketPriority.URGENT, TicketStatus.CLOSED, now.minusWeeks(2));
-        createMockTicket("Email Login Issue", TicketPriority.HIGH, TicketStatus.CLOSED, now.minusWeeks(2));
-        createMockTicket("Printer Jam", TicketPriority.LOW, TicketStatus.CLOSED, now.minusWeeks(2));
-        createMockTicket("Projector Broken", TicketPriority.MEDIUM, TicketStatus.CLOSED, now.minusWeeks(1));
-        createMockTicket("Software Install", TicketPriority.LOW, TicketStatus.CLOSED, now.minusWeeks(1));
-        createMockTicket("VPN Access", TicketPriority.HIGH, TicketStatus.CLOSED, now.minusWeeks(1));
-
-        // FAILURES
-        Ticket failedTicket = createMockTicket("Critical DB Error", TicketPriority.URGENT, TicketStatus.CLOSED, now.minusWeeks(1));
-        failedTicket.setResolvedAt(now.minusWeeks(1).plusDays(3)); // 72h failure
-        createMockTicket("Mouse Broken", TicketPriority.LOW, TicketStatus.OPEN, now.minusDays(1));
-        createMockTicket("System Outage", TicketPriority.URGENT, TicketStatus.OPEN, now.minusDays(2)); // Open failure
-    }
-
-    private Ticket createMockTicket(String title, TicketPriority priority, TicketStatus status, LocalDateTime submittedAt) {
-        Ticket t = new Ticket();
-        t.setId(System.nanoTime()); // Spring/Hibernate usually handles IDs, but for mock objects this is fine
-        t.setTitle(title);
-        t.setPriority(priority);
-        t.setStatus(status);
-        t.setSubmittedAt(submittedAt);
-        if (status == TicketStatus.CLOSED) {
-            t.setResolvedAt(submittedAt.plusHours(2));
-            t.setClosedAt(submittedAt.plusHours(4));
-        }
-        mockTickets.add(t);
-        return t;
-    }
+    // REMOVED MOCK DATA INITIALIZATION
 
     @Override
     public SavedReportArchive generateReport(String reportType, String format) {
         SavedReportArchive report = new SavedReportArchive();
-        // In Spring JPA, ID is usually auto-generated.
-        // If your Entity uses @GeneratedValue, don't set ID here.
-        // If strictly manual: report.setId(System.currentTimeMillis());
-
-        report.setReportName(reportType + " Report");
+        report.setReportName(reportType + "_" + System.currentTimeMillis());
         report.setReportType(reportType);
         report.setFileFormat(format);
 
-        // Content Generation
-        StringBuilder content = new StringBuilder();
-        content.append("SPRING BOOT REPORT: ").append(reportType).append("\n");
-        content.append("DATE: ").append(LocalDateTime.now()).append("\n\n");
+        // 1. Fetch Real Data
+        List<Ticket> tickets = ticketRepository.findAll();
 
-        if ("CSV".equalsIgnoreCase(format)) {
-            content.append("ID,Title,Priority,Status,Submitted\n");
-            for (Ticket t : mockTickets) {
-                content.append(t.getId()).append(",").append(t.getTitle()).append(",")
-                        .append(t.getPriority()).append(",").append(t.getStatus()).append(",")
-                        .append(t.getSubmittedAt()).append("\n");
-            }
-        } else {
-            long open = mockTickets.stream().filter(t -> t.getStatus() == TicketStatus.OPEN).count();
-            content.append("Total: ").append(mockTickets.size()).append("\nOpen: ").append(open);
+        // Optional: Filter based on reportType if needed
+        if ("OpenTickets".equalsIgnoreCase(reportType)) {
+            tickets = tickets.stream()
+                    .filter(t -> t.getStatus() == TicketStatus.OPEN)
+                    .collect(Collectors.toList());
+        } else if ("Performance".equalsIgnoreCase(reportType)) {
+            tickets = tickets.stream()
+                    .filter(t -> t.getStatus() == TicketStatus.CLOSED || t.getStatus() == TicketStatus.RESOLVED)
+                    .collect(Collectors.toList());
         }
 
-        // File Writing (Robust Path)
-        String userHome = System.getProperty("user.home");
-        File directory = new File(userHome, "Desktop");
-        if (!directory.exists()) directory = new File(userHome);
+        // 2. Generate Content
+        StringBuilder content = new StringBuilder();
+        content.append("HELPDESK SYSTEM REPORT\n");
+        content.append("Type: ").append(reportType).append("\n");
+        content.append("Generated: ").append(LocalDateTime.now()).append("\n");
+        content.append("Total Records: ").append(tickets.size()).append("\n\n");
 
-        File file = new File(directory, "Spring_" + reportType + "_" + System.currentTimeMillis() + "." + format.toLowerCase());
+        if ("CSV".equalsIgnoreCase(format)) {
+            // Functionality 2: Custom Data Export (CSV)
+            content.append("ID,Title,Priority,Status,Submitted Date,Resolved Date\n");
+            for (Ticket t : tickets) {
+                content.append(t.getId()).append(",")
+                        .append(escapeCsv(t.getTitle())).append(",")
+                        .append(t.getPriority()).append(",")
+                        .append(t.getStatus()).append(",")
+                        .append(t.getSubmittedAt()).append(",")
+                        .append(t.getResolvedAt() != null ? t.getResolvedAt() : "N/A")
+                        .append("\n");
+            }
+        } else {
+            // Text Summary / Simple View
+            content.append("--- TICKET SUMMARY ---\n");
+            Map<TicketStatus, Long> statusCount = tickets.stream()
+                    .collect(Collectors.groupingBy(Ticket::getStatus, Collectors.counting()));
+
+            statusCount.forEach((k, v) -> content.append(k).append(": ").append(v).append("\n"));
+
+            content.append("\n--- DETAILS ---\n");
+            for(Ticket t : tickets) {
+                content.append(String.format("[%s] %s - %s (%s)\n",
+                        t.getId(), t.getTitle(), t.getStatus(), t.getPriority()));
+            }
+        }
+
+        // 3. Write to File
+        String userHome = System.getProperty("user.home");
+        File directory = new File(userHome, "Desktop/HelpdeskReports");
+        if (!directory.exists()) directory.mkdirs();
+
+        String fileName = reportType + "_" + System.currentTimeMillis() + "." + format.toLowerCase();
+        File file = new File(directory, fileName);
 
         try (FileWriter writer = new FileWriter(file)) {
             writer.write(content.toString());
-            System.out.println("✅ FILE CREATED: " + file.getAbsolutePath());
+            System.out.println("✅ REAL DATA REPORT CREATED: " + file.getAbsolutePath());
         } catch (IOException e) {
-            e.printStackTrace();
+            e.printStackTrace(); // Handle appropriately in production
         }
 
         report.setFilePath(file.getAbsolutePath());
-        return reportRepository.save(report); // Save to Real H2 DB
+
+        // Functionality 1: Manage Saved Reports (Save to DB)
+        return reportRepository.save(report);
     }
 
     @Override
     public Map<String, Object> getFailureRateAnalysis() {
+        // Functionality 3: Analyze System Failure Rates (SLA Breaches)
         Map<String, Object> analysis = new LinkedHashMap<>();
+        List<Ticket> allTickets = ticketRepository.findAll();
         LocalDateTime now = LocalDateTime.now();
+
         long totalEvaluated = 0;
         long missedDeadlines = 0;
 
-        for (Ticket t : mockTickets) {
-            long slaHoursLimit;
-            switch (t.getPriority()) {
-                case URGENT: slaHoursLimit = 24; break;
-                case HIGH: slaHoursLimit = 48; break;
-                default: slaHoursLimit = 168; // 7 days
-            }
+        for (Ticket t : allTickets) {
+            // Define SLA Rules (Hours)
+            long slaHoursLimit = getSlaLimitHours(t.getPriority());
 
+            // Calculate Time Taken (if resolved) or Time Elapsed (if open)
             LocalDateTime endTime = (t.getResolvedAt() != null) ? t.getResolvedAt() : now;
-            long hoursTaken = Duration.between(t.getSubmittedAt(), endTime).toHours();
+
+            // Skip tickets submitted in the future (sanity check)
+            if (t.getSubmittedAt().isAfter(now)) continue;
+
+            long hoursElapsed = Duration.between(t.getSubmittedAt(), endTime).toHours();
             totalEvaluated++;
 
-            if (hoursTaken > slaHoursLimit) missedDeadlines++;
+            if (hoursElapsed > slaHoursLimit) {
+                missedDeadlines++;
+            }
         }
 
         double failureRate = (totalEvaluated == 0) ? 0 : ((double) missedDeadlines / totalEvaluated) * 100;
-        analysis.put("Total Analyzed", totalEvaluated);
-        analysis.put("SLA Breaches", missedDeadlines);
-        analysis.put("Failure Rate", String.format("%.1f%%", failureRate));
-        analysis.put("Risk Level", failureRate > 15.0 ? "CRITICAL" : "STABLE");
+
+        analysis.put("Total Tickets Analyzed", totalEvaluated);
+        analysis.put("Overdue Tickets", missedDeadlines);
+        analysis.put("Failure Rate (%)", String.format("%.2f", failureRate));
+        analysis.put("System Health", failureRate < 10.0 ? "GOOD" : (failureRate < 25.0 ? "WARNING" : "CRITICAL"));
+
         return analysis;
     }
 
     @Override
     public Map<String, Integer> getTicketTrendForecast() {
+        // Functionality 4: Forecast Ticket Trends (Linear Regression on Real Data)
         Map<String, Integer> trends = new LinkedHashMap<>();
+        List<Ticket> tickets = ticketRepository.findAll();
         LocalDateTime now = LocalDateTime.now();
+
+        // Bucket tickets by "Weeks Ago" (0 = this week, 1 = last week, etc.)
+        // We will look at the last 4 weeks
         int[] weeklyCounts = new int[4];
 
-        for (Ticket t : mockTickets) {
-            long weeksBetween = ChronoUnit.WEEKS.between(t.getSubmittedAt(), now);
-            if (weeksBetween >= 0 && weeksBetween < 4) {
-                weeklyCounts[3 - (int) weeksBetween]++;
+        for (Ticket t : tickets) {
+            long weeksAgo = ChronoUnit.WEEKS.between(t.getSubmittedAt(), now);
+            if (weeksAgo >= 0 && weeksAgo < 4) {
+                // Map weeksAgo 0 -> index 3 (Now), 3 -> index 0 (Oldest)
+                int index = 3 - (int) weeksAgo;
+                weeklyCounts[index]++;
             }
         }
 
-        trends.put("Week 1 (-3)", weeklyCounts[0]);
-        trends.put("Week 2 (-2)", weeklyCounts[1]);
-        trends.put("Week 3 (-1)", weeklyCounts[2]);
-        trends.put("Week 4 (Now)", weeklyCounts[3]);
+        trends.put("3 Weeks Ago", weeklyCounts[0]);
+        trends.put("2 Weeks Ago", weeklyCounts[1]);
+        trends.put("Last Week", weeklyCounts[2]);
+        trends.put("Current Week", weeklyCounts[3]);
 
-        // Least Squares Regression
-        List<Integer> history = Arrays.asList(weeklyCounts[0], weeklyCounts[1], weeklyCounts[2]);
-        trends.put("Week 5 (Forecast)", predictNextValue(history));
+        // Predict Next Week using Linear Regression
+        List<Integer> history = Arrays.asList(weeklyCounts[0], weeklyCounts[1], weeklyCounts[2], weeklyCounts[3]);
+        int predicted = predictNextValue(history);
+
+        trends.put("Next Week (Forecast)", predicted);
+
         return trends;
     }
 
+    // Helper: SLA Logic
+    private long getSlaLimitHours(TicketPriority priority) {
+        if (priority == null) return 168; // Default Low
+        switch (priority) {
+            case URGENT: return 24;
+            case HIGH: return 48;
+            case MEDIUM: return 72;
+            case LOW: default: return 168; // 1 Week
+        }
+    }
+
+    // Helper: CSV Escape
+    private String escapeCsv(String data) {
+        if (data == null) return "";
+        return "\"" + data.replace("\"", "\"\"") + "\"";
+    }
+
+    // Helper: Simple Linear Regression
     private int predictNextValue(List<Integer> history) {
         int n = history.size();
-        if (n < 2) return history.get(n - 1);
+        if (n < 2) return history.get(n - 1); // Not enough data
+
         double sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
         for (int i = 0; i < n; i++) {
             sumX += i;
@@ -173,8 +206,11 @@ public class ReportingServiceImpl implements ReportingService {
             sumXY += i * history.get(i);
             sumX2 += i * i;
         }
+
         double slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
         double intercept = (sumY - slope * sumX) / n;
+
+        // Predict for x = n (the next point)
         return Math.max(0, (int) Math.round(slope * n + intercept));
     }
 
@@ -185,6 +221,13 @@ public class ReportingServiceImpl implements ReportingService {
 
     @Override
     public void deleteReport(Long id) {
+        // Optional: Also delete the physical file
+        reportRepository.findById(id).ifPresent(report -> {
+            if (report.getFilePath() != null) {
+                File f = new File(report.getFilePath());
+                if (f.exists()) f.delete();
+            }
+        });
         reportRepository.deleteById(id);
     }
 
