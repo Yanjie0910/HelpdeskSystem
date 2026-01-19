@@ -32,7 +32,7 @@ public class Activator implements BundleActivator {
 
         // 2. Setup Controller and Service
         ReportingController controller = new ReportingController(em);
-        ReportingServiceImpl service = new ReportingServiceImpl(controller);
+        ReportingServiceImpl service = new ReportingServiceImpl();
 
         // 3. Register Service
         if (context != null) {
