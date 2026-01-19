@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="application-component" />
+        <module name="notification-component" />
+        <module name="base-library" />
+        <module name="user-management" />
+        <module name="reporting-component" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="notification" target="1.5" />
+    </bytecodeTargetLevel>
+  </component>
+</project>
