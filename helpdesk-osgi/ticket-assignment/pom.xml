@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.um.helpdesk.osgi</groupId>
+        <artifactId>osgi-helpdesk-parent</artifactId>
+        <version>1.0.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>ticket-assignment</artifactId>
+    <packaging>bundle</packaging>
+
+    <name>UM Helpdesk OSGi - Ticket Assignment Component</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.um.helpdesk.osgi</groupId>
+            <artifactId>base-library</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>osgi.core</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>javax.persistence</groupId>
+            <artifactId>javax.persistence-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate</groupId>
+            <artifactId>hibernate-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <instructions>
+                        <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
+                        <Bundle-Activator>com.um.helpdesk.ticketassignment.Activator</Bundle-Activator>
+
+                        <Meta-Persistence>META-INF/persistence.xml</Meta-Persistence>
+
+                        <Private-Package>
+                            com.um.helpdesk.ticketassignment.impl,
+                            com.um.helpdesk.ticketassignment.repository
+                        </Private-Package>
+
+                        <Import-Package>
+                            !com.um.helpdesk.ticketassignment.repository,
+
+                            !com.sun.management,
+                            !com.sun.tools.javac,
+
+                            !org.codehaus.groovy.*,
+
+                            org.hibernate.proxy,
+                            javassist.util.proxy,
+
+                            com.um.helpdesk.entity,
+                            com.um.helpdesk.service,
+                            javax.persistence;version="[2.2,3)",
+                            org.hibernate*;version="[5.6,6)",
+                            org.osgi.framework;version="[1.9,2)",
+                            *
+                        </Import-Package>
+
+                        <Embed-Dependency>h2</Embed-Dependency>
+                    </instructions>
+                </configuration>
+            </plugin>
+
+            <!-- Felix Plugin for running OSGi container -->
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-felix-plugin</artifactId>
+                <version>1.0.0</version>
+                <configuration>
+                    <felixVersion>7.0.5</felixVersion>
+                    <bundles>
+                        <bundle>
+                            <groupId>com.um.helpdesk.osgi</groupId>
+                            <artifactId>base-library</artifactId>
+                            <version>${project.version}</version>
+                        </bundle>
+                    </bundles>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

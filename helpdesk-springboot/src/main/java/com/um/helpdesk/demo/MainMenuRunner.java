@@ -14,19 +14,20 @@ public class MainMenuRunner implements CommandLineRunner {
     private final UserService userService;
     private final UserManagementConsoleRunner userModule;
     private final NotificationConsoleRunner notificationModule;
-    // private final TicketSubmissionConsoleRunner ticketModule;
+    private final TicketAssignmentConsoleRunner ticketAssignmentModule;
 
     private User currentUser = null;
 
     public MainMenuRunner(
         UserService userService,
         UserManagementConsoleRunner userModule,
-        NotificationConsoleRunner notificationModule
-        // Add other modules here when ready
+        NotificationConsoleRunner notificationModule,
+        TicketAssignmentConsoleRunner ticketAssignmentModule
     ) {
         this.userService = userService;
         this.userModule = userModule;
         this.notificationModule = notificationModule;
+        this.ticketAssignmentModule = ticketAssignmentModule;
     }
 
     @Override
@@ -180,20 +181,30 @@ public class MainMenuRunner implements CommandLineRunner {
     private void displayTechnicianMenu() {
         System.out.println("                 TECHNICIAN MENU                        ");
         System.out.println("────────────────────────────────────────────────────────");
-        System.out.println("  1. View Assigned Tickets                              ");
-        System.out.println("  2. Claim New Ticket                                   ");
-        System.out.println("  3. Transfer Ticket to Department                      ");
-        System.out.println("  4. My Profile                                         ");
-        System.out.println("  5. My Notifications                                   ");
+        System.out.println("  TICKET ASSIGNMENT MODULE - 4 FUNCTIONALITIES         ");
+        System.out.println("  1. View All Tickets                                   ");
+        System.out.println("  2. View My Assigned Tickets                           ");
+        System.out.println("  3. Claim New Ticket (F2: Self-Assignment)             ");
+        System.out.println("  4. Reassign Ticket (F3: Internal Re-assignment)       ");
+        System.out.println("  5. Transfer to Other Department (F4: Inter-Dept)      ");
+        System.out.println("  6. View Assignment History (Chain)                    ");
+        System.out.println("  7. Auto-Route Ticket (F1: Automated Routing)          ");
+        System.out.println("  ─────────────────────────────────────────────────────");
+        System.out.println("  8. My Profile                                         ");
+        System.out.println("  9. My Notifications                                   ");
     }
 
     private boolean handleTechnicianMenu(int choice, Scanner sc) {
         switch (choice) {
-            case 1 -> System.out.println("\nAssigned Tickets (teammate will implement)\n");
-            case 2 -> System.out.println("\nClaim Ticket (teammate will implement)\n");
-            case 3 -> System.out.println("\nTransfer Ticket (teammate will implement)\n");
-            case 4 -> viewMyProfile();
-            case 5 -> notificationModule.runNotificationManagement(sc, currentUser);
+            case 1 -> ticketAssignmentModule.viewAllTickets(sc, currentUser);
+            case 2 -> ticketAssignmentModule.viewAssignedTickets(sc, currentUser);
+            case 3 -> ticketAssignmentModule.claimTicket(sc, currentUser);
+            case 4 -> ticketAssignmentModule.reassignTicket(sc, currentUser);
+            case 5 -> ticketAssignmentModule.transferTicket(sc, currentUser);
+            case 6 -> ticketAssignmentModule.viewAssignmentHistory(sc, currentUser);
+            case 7 -> ticketAssignmentModule.autoRouteTicket(sc, currentUser);
+            case 8 -> viewMyProfile();
+            case 9 -> notificationModule.runNotificationManagement(sc, currentUser);
             case 0 -> {
                 return false;  // Exit
             }
