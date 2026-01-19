@@ -2,83 +2,115 @@
 
 ## Overview
 
-This component provides **Reporting & Analytics** capabilities for the Helpdesk System. It is designed as an **OSGi bundle** that handles report generation, data export simulation, ticket trend forecasting, and failure rate analysis.
+The **Reporting Component** provides analytics and data export capabilities for the Helpdesk System. It aggregates ticket data to generate performance reports, forecast future workload, and analyze service failures.
 
-> ⚠️ **IMPORTANT ARCHITECTURAL NOTE**
-> To ensure stability within the OSGi container (**Apache Felix**) and minimize dependency conflicts for this assignment, this component operates in **In-Memory Mode**.
+> ⚠️ **ARCHITECTURAL NOTE**
+> To ensure stability and avoid dependency conflicts, this component runs in **In-Memory Mode** with **Smart Mock Data**.
 >
-> * **No External Database:** Does not connect to H2 or MySQL
-> * **Mock Data:** Uses internal static data to simulate tickets and saved reports
-> * **Volatile Storage:** All data is lost when the bundle is stopped or the container is restarted
+> * Utilizes the **real `Ticket` entity** structure from `base-library`
+> * Internally creates specific ticket scenarios (e.g., SLA breaches) to demonstrate logic
+> * Generated report files persist on disk, but the **report archive list resets on restart**
 
 ---
 
-## ✅ Implemented Features
-
-This component fulfills the following functional requirements:
+## ✅ Implemented Features & Logic
 
 ### 1. Manage Saved Reports (CRUD)
 
-* **Create:** Generate new reports based on ticket data
-* **Read:** View a list of all archived reports
-* **Update:** Modify report metadata (e.g., rename a report)
-* **Delete:** Remove old reports from the archive
+* **Create / Read / Update / Delete:** Full lifecycle management for report archives
+* **Storage:** Reports are stored in an internal **thread-safe list**
 
-### 2. Generate Custom Data Export
+---
 
-* Simulates exporting data to local files on the user's **Desktop**
-* Supports formats such as:
+### 2. Custom Data Export (Robust File Handling)
 
-    * **CSV** – Structured data export
-    * **Graph** – Text-based visual representation
+* **Function:** Exports reports to physical files on the user's machine
+* **Smart Path Detection:**
 
-### 3. Analyze System Failure Rates
+    1. Attempts to save to `Desktop/`
+    2. If Desktop is unavailable (e.g., OneDrive issues), falls back to **User Home Directory**
+       (`C:\Users\<Name>\`)
+* **Supported Formats:**
 
-* Analyzes mock ticket data to track overdue tickets
-* Calculates failure rates based on missed deadlines
+    * **CSV** – Detailed structured data
+    * **Text Summary** – Human-readable analytics output
 
-### 4. Forecast Ticket Trends
+---
 
-* Uses historical mock data to predict future ticket volume
-* Helps identify potential spikes in service requests
+### 3. Failure Rate Analysis (SLA Logic)
+
+Calculates failure rates using **Service Level Agreement (SLA)** rules applied to mock tickets:
+
+| Priority     | SLA Requirement             |
+| ------------ | --------------------------- |
+| URGENT       | Resolve within **24 hours** |
+| HIGH         | Resolve within **48 hours** |
+| MEDIUM / LOW | Resolve within **7 days**   |
+
+**Output Includes:**
+
+* Total tickets analyzed
+* Number of **SLA breaches**
+* Calculated failure percentage
+* Overall **Risk Level** (`CRITICAL` / `STABLE`)
+
+---
+
+### 4. Forecast Ticket Trends (Statistical Analysis)
+
+Predicts next week's ticket volume using **Least Squares Linear Regression**.
+
+* **Data Range:** Week -3 to Current Week
+* **Method:** Line of best fit calculation
+* **Formula:**
+  [ y = mx + c ]
+* **Result:** Mathematical prediction for **Week +1** ticket volume
 
 ---
 
 ## 🛠️ Installation & Deployment
 
-### 1. Build the Bundle
+### 1. Prerequisites
 
-Navigate to the `reporting-component` directory and run:
+Ensure `base-library` is built and installed first, as this component depends on the real `Ticket` entity.
 
 ```bash
+cd base-library
 mvn clean install
 ```
 
-### 2. Deploy to Apache Felix
+---
 
-Start your Apache Felix container:
+### 2. Build Reporting Component
+
+```bash
+cd reporting-component
+mvn clean install
+```
+
+---
+
+### 3. Deploy to Apache Felix
+
+Start Apache Felix:
 
 ```bash
 java -jar bin/felix.jar
 ```
 
-Then execute the following commands in the **g! console**:
+Install and start the bundle via the **g! console**:
 
 ```bash
-# 1. Install the bundle (update the path to your actual location)
-install file:///path/to/helpdesk-osgi/reporting-component/target/reporting-component-1.0.0.jar
+# Install bundle
+install file:///path/to/reporting-component/target/reporting-component-1.0.0.jar
 
-# 2. Start the bundle
+# Start bundle
 start <BUNDLE_ID>
 ```
-
-> Replace `<BUNDLE_ID>` with the ID returned by the `install` command (e.g., `start 15`).
 
 ---
 
 ## 🔌 Service API Usage
-
-Other components (e.g., `application-component` or `web-console`) can consume this functionality via the **ReportingService** interface.
 
 **Interface:**
 
@@ -86,77 +118,71 @@ Other components (e.g., `application-component` or `web-console`) can consume th
 com.um.helpdesk.service.ReportingService
 ```
 
-### Code Examples
+### Examples
 
-#### 1. Generating a Report
-
-```java
-ReportingService service = ...; // Obtained via OSGi context
-
-// Generates a CSV report and saves it to the Desktop
-SavedReportArchive report = service.generateReport("TicketVolume", "CSV");
-System.out.println("Report saved at: " + report.getFilePath());
-```
-
-#### 2. Failure Rate Analysis
+#### 1. Generate & Save a Report
 
 ```java
-Map<String, Object> stats = service.getFailureRateAnalysis();
+ReportingService service = ...; // Obtained via @Reference
 
-System.out.println("Total Overdue: " + stats.get("Missed Deadlines"));
-System.out.println("Failure Rate: " + stats.get("Failure Rate"));
+SavedReportArchive report = service.generateReport("Monthly_Stats", "CSV");
+System.out.println("File saved at: " + report.getFilePath());
 ```
 
-#### 3. Forecasting Ticket Trends
+---
+
+#### 2. Get Failure Analysis
+
+```java
+Map<String, Object> analysis = service.getFailureRateAnalysis();
+
+System.out.println("Risk Level: " + analysis.get("Risk Level"));
+// Example Output: CRITICAL (failure rate > 15%)
+```
+
+---
+
+#### 3. Get Trend Forecast
 
 ```java
 Map<String, Integer> trends = service.getTicketTrendForecast();
-System.out.println("Next Week Prediction: " + trends.get("Next Week (Predicted)"));
-```
 
-#### 4. Updating a Report
-
-```java
-// Rename an existing report
-report.setReportName("Updated Monthly Analysis");
-service.updateReport(report);
+System.out.println("Forecast: " + trends.get("Week 5 (Forecast)"));
 ```
 
 ---
 
-## 📂 Internal Mock Data
+## 📂 Internal Data Scenarios
 
-Since there is no database connection, the `ReportingServiceImpl` initializes with mock ticket data to support logic testing:
+The component initializes with structured mock tickets to validate logic:
 
-| Ticket ID | Status | Condition | Used For         |
-| --------- | ------ | --------- | ---------------- |
-| T1        | Closed | On Time   | Trend History    |
-| T2        | Closed | Late      | Failure Analysis |
-| T3        | Open   | Normal    | Current Volume   |
-| T4        | Open   | Overdue   | Failure Analysis |
-| T5, T6    | Open   | Future    | Trend Prediction |
+| Scenario          | Priority | Status | Timeframe   | Outcome                  |
+| ----------------- | -------- | ------ | ----------- | ------------------------ |
+| Critical DB Error | URGENT   | Closed | Last Week   | ❌ Failure (3 days > 24h) |
+| System Outage     | URGENT   | Open   | Current     | ❌ Failure (>48h)         |
+| WiFi Down         | MEDIUM   | Closed | 3 Weeks Ago | ✅ Success                |
+| VPN Access        | HIGH     | Closed | Last Week   | ✅ Success                |
 
----
-
-## 📁 File Output Location
-
-* **Windows:** `C:\Users\<YourUser>\Desktop`
-* **macOS / Linux:** `~/Desktop`
+* **Total Tickets:** 11
+* **Expected Failure Rate:** ~18% (2 / 11)
+* **Trend Pattern:** `2 → 3 → 4 → 2 (Current)`
+* **Predicted Next Week:** **5 tickets**
 
 ---
 
-## 🧪 Testing & Verification
+## 🧪 Verification
 
-You can verify the component is working by checking the logs upon startup:
+### OSGi Console Logs
 
 ```text
 Starting Reporting Component (In-Memory Mode)...
 ReportingService registered successfully.
 ```
 
-If you run the `ReportingLauncher` locally (outside OSGi), you should see console output demonstrating:
+### ReportingLauncher Output (Local Testing)
 
-* Report generation
-* File creation
-* Failure rate calculation
-* Ticket trend forecasting
+```text
+✅ FILE CREATED: C:\Users\...\Desktop\Visual_Trend_....csv
+Failure Stats: { ..., Risk Level=CRITICAL }
+Trends: { ..., Week 5 (Forecast)=5 }
+```

@@ -16,7 +16,6 @@
         <module>base-library</module>
         <module>user-management</module>
         <module>ticket-assignment</module>
-        <module>notification</module>
         <module>reporting-component</module>
         <module>notification-component</module>
         <module>application-component</module>

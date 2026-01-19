@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -52,7 +52,6 @@
                     <instructions>
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Bundle-Activator>com.um.helpdesk.ticketassignment.Activator</Bundle-Activator>
-
                         <Meta-Persistence>META-INF/persistence.xml</Meta-Persistence>
 
                         <Private-Package>
@@ -61,43 +60,50 @@
                         </Private-Package>
 
                         <Import-Package>
-                            !com.um.helpdesk.ticketassignment.repository,
-
-                            !com.sun.management,
-                            !com.sun.tools.javac,
-
-                            !org.codehaus.groovy.*,
-
-                            org.hibernate.proxy,
-                            javassist.util.proxy,
-
                             com.um.helpdesk.entity,
                             com.um.helpdesk.service,
-                            javax.persistence;version="[2.2,3)",
-                            org.hibernate*;version="[5.6,6)",
-                            org.osgi.framework;version="[1.9,2)",
+                            org.osgi.framework,
+                            javax.persistence,
+                            javax.sql,
+
+                            !com.um.helpdesk.ticketassignment.repository,
+                            !com.sun.*,
+                            !sun.misc,
+                            !jdk.*,
+                            !javax.annotation.*,
+                            !javax.interceptor.*,
+                            !javax.enterprise.*,
+                            !javax.inject.*,
+                            !javax.transaction.*,
+                            !javax.servlet.*,
+                            !javax.xml.bind.*,
+                            !javax.activation.*,
+                            !javax.resource.*,
+                            !javax.jws.*,
+                            !javax.security.*,
+                            !javax.faces.*,
+                            !javax.el.*,
+                            !javax.validation.*,
+                            !com.ibm.icu.*,
+                            !org.slf4j.*,
+                            !org.apache.logging.log4j.*,
+                            !org.locationtech.*,
+                            !org.osgi.service.*,
+                            !org.osgi.util.*,
+                            !org.hibernate.*,
+                            !org.dom4j.*,
+                            !javassist.*,
+                            !net.bytebuddy.*,
+                            !antlr.*,
+                            !org.jboss.*,
+                            !com.fasterxml.*,
+                            !org.codehaus.groovy.*,
+
                             *
                         </Import-Package>
 
-                        <Embed-Dependency>h2</Embed-Dependency>
+                        <Embed-Dependency>h2;scope=compile|runtime;inline=false</Embed-Dependency>
                     </instructions>
-                </configuration>
-            </plugin>
-
-            <!-- Felix Plugin for running OSGi container -->
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-felix-plugin</artifactId>
-                <version>1.0.0</version>
-                <configuration>
-                    <felixVersion>7.0.5</felixVersion>
-                    <bundles>
-                        <bundle>
-                            <groupId>com.um.helpdesk.osgi</groupId>
-                            <artifactId>base-library</artifactId>
-                            <version>${project.version}</version>
-                        </bundle>
-                    </bundles>
                 </configuration>
             </plugin>
         </plugins>
