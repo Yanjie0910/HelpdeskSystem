@@ -1,3 +1,6 @@
+# Maven build directory
+target/
+
 # Compiled class file
 *.class
 
@@ -23,5 +26,21 @@
 hs_err_pid*
 replay_pid*
 
+# IDE files
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# OSGi cache
+felix-cache/
+osgi-cache/
+
+# Database files
+*.db
+*.mv.db
+*.trace.db
 # Maven
 **/target/
