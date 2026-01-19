@@ -1,184 +1,159 @@
 package com.um.helpdesk.reporting.impl;
 
 import com.um.helpdesk.entity.SavedReportArchive;
+import com.um.helpdesk.entity.Ticket;
+import com.um.helpdesk.entity.TicketPriority;
+import com.um.helpdesk.entity.TicketStatus;
 import com.um.helpdesk.service.ReportingService;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class ReportingServiceImpl implements ReportingService {
 
-    // In-memory Database for Reports (Req 1)
     private final List<SavedReportArchive> savedReports = new ArrayList<>();
 
-    // --- MOCK DATA SETUP ---
-    // Since we don't have the Ticket component, we mock it internally to test logic.
-    private static class MockTicket {
-        String id;
-        String status; // Open, Closed
-        LocalDate createdDate;
-        LocalDate dueDate;
-        LocalDate closedDate;
-
-        public MockTicket(String id, String status, LocalDate created, LocalDate due, LocalDate closed) {
-            this.id = id;
-            this.status = status;
-            this.createdDate = created;
-            this.dueDate = due;
-            this.closedDate = closed;
-        }
-    }
-
-    private final List<MockTicket> mockTickets = new ArrayList<>();
+    // REAL ENTITY LIST (Mocked Data)
+    private final List<Ticket> mockTickets = new ArrayList<>();
 
     public ReportingServiceImpl() {
         initializeMockTickets();
     }
 
     private void initializeMockTickets() {
-        LocalDate now = LocalDate.now();
+        LocalDateTime now = LocalDateTime.now();
 
-        // Past Data (for Trends)
-        mockTickets.add(new MockTicket("T1", "Closed", now.minusWeeks(3), now.minusWeeks(3).plusDays(2), now.minusWeeks(3).plusDays(1)));
-        mockTickets.add(new MockTicket("T2", "Closed", now.minusWeeks(2), now.minusWeeks(2).plusDays(2), now.minusWeeks(2).plusDays(3))); // LATE
+        // --- WEEK 1 DATA (3 Weeks Ago) - 2 Tickets ---
+        createMockTicket("WiFi Down", TicketPriority.MEDIUM, TicketStatus.CLOSED, now.minusWeeks(3));
+        createMockTicket("PC Restarting", TicketPriority.LOW, TicketStatus.CLOSED, now.minusWeeks(3));
 
-        // Current Data
-        mockTickets.add(new MockTicket("T3", "Open", now.minusDays(1), now.plusDays(2), null));
-        mockTickets.add(new MockTicket("T4", "Open", now.minusDays(5), now.minusDays(1), null)); // OVERDUE (Failure)
+        // --- WEEK 2 DATA (2 Weeks Ago) - 3 Tickets ---
+        createMockTicket("Server Crash", TicketPriority.URGENT, TicketStatus.CLOSED, now.minusWeeks(2));
+        createMockTicket("Email Login Issue", TicketPriority.HIGH, TicketStatus.CLOSED, now.minusWeeks(2));
+        createMockTicket("Printer Jam", TicketPriority.LOW, TicketStatus.CLOSED, now.minusWeeks(2));
 
-        // Future Spike Simulation (by creating 'Open' tickets due soon)
-        mockTickets.add(new MockTicket("T5", "Open", now, now.plusDays(1), null));
-        mockTickets.add(new MockTicket("T6", "Open", now, now.plusDays(1), null));
+        // --- WEEK 3 DATA (Last Week) - 4 Tickets ---
+        createMockTicket("Projector Broken", TicketPriority.MEDIUM, TicketStatus.CLOSED, now.minusWeeks(1));
+        createMockTicket("Software Install", TicketPriority.LOW, TicketStatus.CLOSED, now.minusWeeks(1));
+        createMockTicket("VPN Access", TicketPriority.HIGH, TicketStatus.CLOSED, now.minusWeeks(1));
+        // THIS ONE FAILED SLA (Urgent but took 3 days to close)
+        Ticket failedTicket = createMockTicket("Critical DB Error", TicketPriority.URGENT, TicketStatus.CLOSED, now.minusWeeks(1));
+        failedTicket.setResolvedAt(now.minusWeeks(1).plusDays(3)); // Took 72 hours (Failure)
+
+        // --- WEEK 4 DATA (Current Week) - 2 Tickets so far ---
+        createMockTicket("Mouse Broken", TicketPriority.LOW, TicketStatus.OPEN, now.minusDays(1));
+        // THIS ONE IS FAILING NOW (Urgent, Open for 2 days)
+        createMockTicket("System Outage", TicketPriority.URGENT, TicketStatus.OPEN, now.minusDays(2));
     }
-    // -----------------------
 
-    // Functionality 1: CRUD (Create) & Functionality 2: Export
+    // Helper to create tickets easily
+    private Ticket createMockTicket(String title, TicketPriority priority, TicketStatus status, LocalDateTime submittedAt) {
+        Ticket t = new Ticket();
+        t.setId(System.nanoTime()); // Fake ID
+        t.setTitle(title);
+        t.setPriority(priority);
+        t.setStatus(status);
+        t.setSubmittedAt(submittedAt);
+
+        // If closed, assume it was closed 2 hours after submission (unless overridden)
+        if (status == TicketStatus.CLOSED) {
+            t.setResolvedAt(submittedAt.plusHours(2));
+            t.setClosedAt(submittedAt.plusHours(4));
+        }
+
+        mockTickets.add(t);
+        return t;
+    }
+
+    // --- FUNCTIONALITY 3: FAILURE RATE ANALYSIS ---
     @Override
-    public SavedReportArchive generateReport(String reportType, String format) {
-        SavedReportArchive report = new SavedReportArchive();
-        long id = System.currentTimeMillis();
-        report.setId(id);
-        report.setReportName(reportType + " Report - " + LocalDate.now());
-        // Note: Ensure your Entity has these fields. If not, use generic 'setData' or similar.
-        // Assuming your SavedReportArchive in base-library might need these fields if they aren't there.
-        // For now we set what we can.
+    public Map<String, Object> getFailureRateAnalysis() {
+        Map<String, Object> analysis = new LinkedHashMap<>();
+        LocalDateTime now = LocalDateTime.now();
 
-        // GENERATE CONTENT (Functionality 2)
-        StringBuilder content = new StringBuilder();
-        content.append("REPORT TYPE: ").append(reportType).append("\n");
-        content.append("FORMAT: ").append(format).append("\n");
-        content.append("------------------------------------------------\n");
+        long totalEvaluated = 0;
+        long missedDeadlines = 0;
 
-        if ("CSV".equalsIgnoreCase(format)) {
-            content.append("TicketID,Status,Created,Due\n");
-            for(MockTicket t : mockTickets) {
-                content.append(t.id).append(",").append(t.status).append(",").append(t.createdDate).append(",").append(t.dueDate).append("\n");
+        for (Ticket t : mockTickets) {
+            // SLA RULES:
+            // URGENT: Must be resolved in 24 Hours
+            // HIGH: Must be resolved in 48 Hours
+            // MEDIUM/LOW: 7 Days
+
+            long slaHoursLimit;
+            switch (t.getPriority()) {
+                case URGENT: slaHoursLimit = 24; break;
+                case HIGH: slaHoursLimit = 48; break;
+                default: slaHoursLimit = 168; // 7 days
             }
-        } else if ("Graph".equalsIgnoreCase(format)) {
-            content.append("[GRAPH DATA REPRESENTATION]\n");
-            content.append("Week 1: ** (2)\n");
-            content.append("Week 2: **** (4)\n");
-            content.append("(Visualizing spikes in text format)\n");
-        } else {
-            content.append("Standard Report Export...\n");
-        }
 
-        // Simulate File Creation
-        String userHome = System.getProperty("user.home");
-        String fileName = "Report_" + id + "." + (format.equalsIgnoreCase("Graph") ? "txt" : format.toLowerCase());
-        String fullPath = userHome + File.separator + "Desktop" + File.separator + fileName;
+            LocalDateTime endTime = (t.getResolvedAt() != null) ? t.getResolvedAt() : now;
+            long hoursTaken = Duration.between(t.getSubmittedAt(), endTime).toHours();
 
-        // Write to file (Functionality 2)
-        try (FileWriter writer = new FileWriter(fullPath)) {
-            writer.write(content.toString());
-            System.out.println("✅ FILE GENERATED: " + fullPath);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+            totalEvaluated++;
 
-        report.setFilePath(fullPath); // Assuming field exists
-        savedReports.add(report);
-        return report;
-    }
-
-    // Functionality 1: CRUD (Read)
-    @Override
-    public List<SavedReportArchive> getAllSavedReports() {
-        return new ArrayList<>(savedReports);
-    }
-
-    // Functionality 1: CRUD (Update)
-    @Override
-    public void updateReport(SavedReportArchive report) {
-        for (int i = 0; i < savedReports.size(); i++) {
-            if (savedReports.get(i).getId().equals(report.getId())) {
-                savedReports.set(i, report);
-                System.out.println("🔄 Report Updated: " + report.getReportName());
-                return;
+            if (hoursTaken > slaHoursLimit) {
+                missedDeadlines++;
             }
         }
-        System.err.println("❌ Report not found for update.");
+
+        double failureRate = (totalEvaluated == 0) ? 0 : ((double) missedDeadlines / totalEvaluated) * 100;
+
+        analysis.put("Total Tickets Analyzed", totalEvaluated);
+        analysis.put("SLA Breaches (Overdue)", missedDeadlines);
+        analysis.put("Failure Rate", String.format("%.1f%%", failureRate));
+        analysis.put("Risk Level", failureRate > 15.0 ? "CRITICAL" : "STABLE");
+
+        return analysis;
     }
 
-    // Functionality 1: CRUD (Delete)
-    @Override
-    public void deleteReport(Long id) {
-        savedReports.removeIf(r -> r.getId().equals(id));
-        System.out.println("🗑️ Report Deleted: " + id);
-    }
-
-    // Functionality 4: Forecast Ticket Trends
+    // --- FUNCTIONALITY 4: STATISTICAL TREND FORECAST ---
     @Override
     public Map<String, Integer> getTicketTrendForecast() {
-        Map<String, Integer> trends = new LinkedHashMap<>(); // Use LinkedHashMap to keep order
-        LocalDate now = LocalDate.now();
+        Map<String, Integer> trends = new LinkedHashMap<>();
+        LocalDateTime now = LocalDateTime.now();
 
-        // 1. Group Mock Tickets by "Weeks Ago" (0 = this week, 1 = last week, etc.)
-        int[] weeklyCounts = new int[4]; // [3 weeks ago, 2 weeks ago, 1 week ago, current]
+        // 1. Group by Weeks Ago (0=Current, 1=Last Week, etc.)
+        int[] weeklyCounts = new int[4]; // [Week-3, Week-2, Week-1, Current]
 
-        for (MockTicket t : mockTickets) {
-            // Only count past/current tickets, ignore future mock ones
-            if (t.createdDate.isAfter(now)) continue;
-
-            long daysAgo = java.time.temporal.ChronoUnit.DAYS.between(t.createdDate, now);
-            int weeksAgo = (int) (daysAgo / 7);
-
-            if (weeksAgo < 4) {
-                // Store in array (index 3 is current week, 0 is 3 weeks ago)
-                weeklyCounts[3 - weeksAgo]++;
+        for (Ticket t : mockTickets) {
+            long weeksBetween = ChronoUnit.WEEKS.between(t.getSubmittedAt(), now);
+            if (weeksBetween >= 0 && weeksBetween < 4) {
+                // Map index: 3 is current, 0 is 3 weeks ago
+                int index = 3 - (int) weeksBetween;
+                weeklyCounts[index]++;
             }
         }
 
-        // 2. Populate the Map with Real Counts
+        // 2. Populate History
         trends.put("Week 1 (3 weeks ago)", weeklyCounts[0]);
         trends.put("Week 2 (2 weeks ago)", weeklyCounts[1]);
         trends.put("Week 3 (Last week)", weeklyCounts[2]);
         trends.put("Week 4 (Current)", weeklyCounts[3]);
 
-        // 3. Apply Statistical Prediction
-        List<Integer> history = new ArrayList<>();
-        for (int count : weeklyCounts) history.add(count);
+        // 3. Perform Linear Regression (Least Squares)
+        // X = Time (0, 1, 2), Y = Count
+        // We use the first 3 completed weeks for prediction
+        List<Integer> history = Arrays.asList(weeklyCounts[0], weeklyCounts[1], weeklyCounts[2]);
+        int nextWeekPrediction = predictNextValue(history);
 
-        int prediction = predictNextValue(history);
-
-        trends.put("Week 5 (Forecast)", prediction);
+        trends.put("Week 5 (Forecast)", nextWeekPrediction);
 
         return trends;
     }
 
-    // Helper: Calculates y = mx + b to predict the next value
+    // Math Helper: y = mx + c
     private int predictNextValue(List<Integer> history) {
         int n = history.size();
-        if (n < 2) return history.get(0); // Not enough data, return last value
+        if (n < 2) return history.get(n - 1);
 
-        // x = time (0, 1, 2...), y = ticket count
         double sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
-
         for (int i = 0; i < n; i++) {
             sumX += i;
             sumY += history.get(i);
@@ -186,32 +161,87 @@ public class ReportingServiceImpl implements ReportingService {
             sumX2 += i * i;
         }
 
-        // Calculate Slope (m) and Intercept (b)
         double slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
         double intercept = (sumY - slope * sumX) / n;
 
-        // Predict next value (x = n)
+        // Predict for X = n (the next step)
         int predicted = (int) Math.round(slope * n + intercept);
-        return Math.max(0, predicted); // Cannot have negative tickets
+        return Math.max(0, predicted);
     }
 
-    // Functionality 3: Analyze System Failure Rates
+    // --- CRUD OPERATIONS (Unchanged but using Ticket Entity) ---
     @Override
-    public Map<String, Object> getFailureRateAnalysis() {
-        Map<String, Object> analysis = new HashMap<>();
-        LocalDate now = LocalDate.now();
+    public SavedReportArchive generateReport(String reportType, String format) {
+        SavedReportArchive report = new SavedReportArchive();
+        long id = System.currentTimeMillis();
+        report.setId(id);
+        report.setReportName(reportType + " Report");
+        report.setReportType(reportType);
+        report.setFileFormat(format);
 
-        long totalDue = mockTickets.stream().filter(t -> t.dueDate.isBefore(now) || t.closedDate != null).count();
-        long failures = mockTickets.stream()
-                .filter(t -> (t.closedDate != null && t.closedDate.isAfter(t.dueDate)) ||
-                        (t.status.equals("Open") && t.dueDate.isBefore(now)))
-                .count();
+        // Generate Content (Same as before)
+        StringBuilder content = new StringBuilder();
+        content.append("REPORT: ").append(reportType).append("\n");
+        content.append("DATE: ").append(LocalDateTime.now()).append("\n\n");
 
-        double rate = totalDue == 0 ? 0 : ((double) failures / totalDue) * 100;
+        if ("CSV".equalsIgnoreCase(format)) {
+            content.append("ID,Title,Priority,Status,Submitted\n");
+            for(Ticket t : mockTickets) {
+                content.append(t.getId()).append(",")
+                        .append(t.getTitle()).append(",")
+                        .append(t.getPriority()).append(",")
+                        .append(t.getStatus()).append(",")
+                        .append(t.getSubmittedAt()).append("\n");
+            }
+        } else {
+            long open = mockTickets.stream().filter(t -> t.getStatus() == TicketStatus.OPEN).count();
+            content.append("Total Tickets: ").append(mockTickets.size()).append("\n");
+            content.append("Open: ").append(open).append("\n");
+        }
 
-        analysis.put("Total Evaluated", totalDue);
-        analysis.put("Missed Deadlines", failures);
-        analysis.put("Failure Rate", rate + "%");
-        return analysis;
+        // --- FIX: ROBUST FILE PATH HANDLING ---
+        String userHome = System.getProperty("user.home");
+        File directory = new File(userHome, "Desktop");
+
+        // If "Desktop" doesn't exist (e.g., OneDrive issue), fallback to user home
+        if (!directory.exists()) {
+            directory = new File(userHome);
+        }
+
+        File file = new File(directory, reportType + "_" + id + "." + format.toLowerCase());
+
+        // Ensure parent folders exist to prevent "Path Not Found" error
+        if (file.getParentFile() != null) {
+            file.getParentFile().mkdirs();
+        }
+
+        report.setFilePath(file.getAbsolutePath());
+
+        // Write File
+        try (FileWriter writer = new FileWriter(file)) {
+            writer.write(content.toString());
+            System.out.println("✅ FILE CREATED: " + file.getAbsolutePath());
+        } catch (IOException e) {
+            System.err.println("❌ FAILED TO WRITE FILE: " + e.getMessage());
+            e.printStackTrace();
+        }
+        // --------------------------------------
+
+        savedReports.add(report);
+        return report;
+    }
+
+    @Override
+    public List<SavedReportArchive> getAllSavedReports() { return new ArrayList<>(savedReports); }
+    @Override
+    public void deleteReport(Long id) { savedReports.removeIf(r -> r.getId().equals(id)); }
+    @Override
+    public void updateReport(SavedReportArchive report) {
+        for(int i=0; i<savedReports.size(); i++) {
+            if(savedReports.get(i).getId().equals(report.getId())) {
+                savedReports.set(i, report);
+                return;
+            }
+        }
     }
 }
