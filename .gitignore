@@ -42,3 +42,5 @@ osgi-cache/
 *.db
 *.mv.db
 *.trace.db
+# Maven
+**/target/

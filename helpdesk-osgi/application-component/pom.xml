@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.um.helpdesk.osgi</groupId>
+        <artifactId>osgi-helpdesk-parent</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>application-component</artifactId>
+    <packaging>bundle</packaging>
+
+    <name>UM Helpdesk OSGi - Application Component</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.um.helpdesk.osgi</groupId>
+            <artifactId>base-library</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>osgi.core</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <configuration>
+                    <instructions>
+                        <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
+                        <Bundle-Activator>com.um.helpdesk.app.Activator</Bundle-Activator>
+                        <Import-Package>
+                            com.um.helpdesk.service,
+                            com.um.helpdesk.entity,
+                            org.osgi.framework,
+                            javax.swing,
+                            java.awt*
+                        </Import-Package>
+                    </instructions>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

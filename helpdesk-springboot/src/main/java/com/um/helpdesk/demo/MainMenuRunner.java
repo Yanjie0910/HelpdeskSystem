@@ -8,7 +8,7 @@ import com.um.helpdesk.entity.*;
 import com.um.helpdesk.service.UserService;
 
 @Component
-@Order(1)  
+@Order(1)
 public class MainMenuRunner implements CommandLineRunner {
 
     private final UserService userService;
@@ -33,41 +33,65 @@ public class MainMenuRunner implements CommandLineRunner {
     @Override
     public void run(String... args) {
         Scanner sc = new Scanner(System.in);
-        
+
         System.out.println("╔════════════════════════════════════════════════════════════╗");
         System.out.println("║               UNIVERSITY MALAYA HELPDESK SYSTEM            ║");
         System.out.println("╚════════════════════════════════════════════════════════════╝");
         System.out.println();
-        
-        // Simple user selection (no password needed)
-        if (!selectDemoUser(sc)) {
-            System.out.println("User selection failed. System terminated.");
-            sc.close();
-            return;
-        }
-        
-        boolean running = true;
-        
-        while (running) {
-            displayRoleBasedMenu();
-            System.out.print("Choose option: ");
-            
-            int choice = sc.nextInt();
-            sc.nextLine();
-            
-            // Route based on user role
-            switch (currentUser.getRole()) {
-                case ADMIN -> running = handleAdminMenu(choice, sc);
-                case STUDENT, STAFF -> running = handleStudentStaffMenu(choice, sc);
-                case TECHNICIAN -> running = handleTechnicianMenu(choice, sc);
+
+        // Outer loop - allows returning to user selection
+        boolean systemRunning = true;
+
+        while (systemRunning) {
+            // Simple user selection (no password needed)
+            if (!selectDemoUser(sc)) {
+                System.out.println("User selection failed. System terminated.");
+                sc.close();
+                return;
             }
+
+            boolean running = true;
+
+            // Inner loop - main menu for selected user
+            while (running) {
+                displayRoleBasedMenu();
+                System.out.print("Choose option: ");
+
+                int choice = sc.nextInt();
+                sc.nextLine();
+
+                // Route based on user role
+                switch (currentUser.getRole()) {
+                    case ADMIN -> running = handleAdminMenu(choice, sc);
+                    case STUDENT, STAFF -> running = handleStudentStaffMenu(choice, sc);
+                    case TECHNICIAN -> running = handleTechnicianMenu(choice, sc);
+                }
+            }
+
+            // When user exits (choice 0), ask if they want to switch user or exit system
+            System.out.println("\n┌────────────────────────────────────────────────────────────┐");
+            System.out.println("│  Session ended for: " + String.format("%-39s", currentUser.getFullName()) + " │");
+            System.out.println("├────────────────────────────────────────────────────────────┤");
+            System.out.println("│  1. Switch to another user                                 │");
+            System.out.println("│  0. Exit system completely                                 │");
+            System.out.println("└────────────────────────────────────────────────────────────┘");
+            System.out.print("Choose option: ");
+
+            int exitChoice = sc.nextInt();
+            sc.nextLine();
+
+            if (exitChoice == 0) {
+                systemRunning = false;
+                System.out.println("\n👋 Thank you for using UM Helpdesk System. Goodbye!");
+            } else if (exitChoice != 1) {
+                System.out.println("\n⚠️ Invalid option. Returning to user selection...\n");
+            }
+            // If exitChoice == 1, loop continues and shows user selection again
         }
-        
-        System.out.println("\nSession ended. Goodbye, " + currentUser.getFullName() + "!");
+
         sc.close();
     }
 
-    
     private boolean selectDemoUser(Scanner sc) {
         System.out.println("┌────────────────────────────────────────────────────────────┐");
         System.out.println("│                   SELECT DEMO USER                         │");
@@ -76,31 +100,32 @@ public class MainMenuRunner implements CommandLineRunner {
         System.out.println("│  2. Student - Lily Tan                                     │");
         System.out.println("│  3. Staff - Muthu                                          │");
         System.out.println("│  4. Technician - Bob Lee                                   │");
+        System.out.println("│  0. Exit                                                   │");
         System.out.println("└────────────────────────────────────────────────────────────┘");
         System.out.print("Choose user (1-4): ");
-        
+
         int choice = sc.nextInt();
         sc.nextLine();
-        
+
         try {
             currentUser = switch (choice) {
-                case 1 -> userService.getUserById(1L);  // Admin
-                case 2 -> userService.getUserById(2L);  // Student
-                case 3 -> userService.getUserById(3L);  // Staff
-                case 4 -> userService.getUserById(4L);  // Technician
+                case 1 -> userService.getUserById(1L); // Admin
+                case 2 -> userService.getUserById(2L); // Student
+                case 3 -> userService.getUserById(3L); // Staff
+                case 4 -> userService.getUserById(4L); // Technician
                 default -> null;
             };
-            
+
             if (currentUser == null) {
                 System.out.println("\nInvalid selection.\n");
                 return false;
             }
-            
+
             System.out.println("\nSelected: " + currentUser.getFullName());
             System.out.println("   Role: " + currentUser.getRole());
             System.out.println();
             return true;
-            
+
         } catch (RuntimeException e) {
             System.out.println("\n Error: " + e.getMessage());
             System.out.println("TIP: Make sure test data is initialized.\n");
@@ -109,25 +134,25 @@ public class MainMenuRunner implements CommandLineRunner {
     }
 
     // ==================== ROLE-BASED MENUS ====================
-    
+
     private void displayRoleBasedMenu() {
         System.out.println("┌────────────────────────────────────────────────────────────┐");
         System.out.println("│  Logged in as: " + String.format("%-44s", currentUser.getFullName()) + " │");
         System.out.println("│  Role: " + String.format("%-52s", currentUser.getRole()) + " │");
         System.out.println("├────────────────────────────────────────────────────────────┤");
-        
+
         switch (currentUser.getRole()) {
             case ADMIN -> displayAdminMenu();
             case STUDENT, STAFF -> displayStudentStaffMenu();
             case TECHNICIAN -> displayTechnicianMenu();
         }
-        
+
         System.out.println("│  0.  Exit                                                │");
         System.out.println("└────────────────────────────────────────────────────────────┘");
     }
 
     // ==================== ADMIN MENU ====================
-    
+
     private void displayAdminMenu() {
         System.out.println("                   ADMIN MENU                              ");
         System.out.println("───────────────────────────────────────────────────────────");
@@ -144,7 +169,7 @@ public class MainMenuRunner implements CommandLineRunner {
             case 3 -> System.out.println("\nView All Tickets (teammate will implement)\n");
             case 4 -> notificationModule.runNotificationManagement(sc, currentUser);
             case 0 -> {
-                return false;  // Exit
+                return false; // Exit
             }
             default -> System.out.println("\nInvalid option.\n");
         }
@@ -152,7 +177,7 @@ public class MainMenuRunner implements CommandLineRunner {
     }
 
     // ==================== STUDENT/STAFF MENU ====================
-    
+
     private void displayStudentStaffMenu() {
         System.out.println("                  STUDENT/STAFF MENU                  ");
         System.out.println("──────────────────────────────────────────────────────");
@@ -169,7 +194,7 @@ public class MainMenuRunner implements CommandLineRunner {
             case 3 -> viewMyProfile();
             case 4 -> notificationModule.runNotificationManagement(sc, currentUser);
             case 0 -> {
-                return false;  // Exit
+                return false; // Exit
             }
             default -> System.out.println("\n Invalid option.\n");
         }
@@ -177,7 +202,7 @@ public class MainMenuRunner implements CommandLineRunner {
     }
 
     // ==================== TECHNICIAN MENU ====================
-    
+
     private void displayTechnicianMenu() {
         System.out.println("                 TECHNICIAN MENU                        ");
         System.out.println("────────────────────────────────────────────────────────");
@@ -206,7 +231,7 @@ public class MainMenuRunner implements CommandLineRunner {
             case 8 -> viewMyProfile();
             case 9 -> notificationModule.runNotificationManagement(sc, currentUser);
             case 0 -> {
-                return false;  // Exit
+                return false; // Exit
             }
             default -> System.out.println("\nInvalid option.\n");
         }
@@ -214,7 +239,7 @@ public class MainMenuRunner implements CommandLineRunner {
     }
 
     // ==================== COMMON FUNCTIONS ====================
-    
+
     private void viewMyProfile() {
         System.out.println("\n═════════════════════════════════════════════════════════");
         System.out.println("                      MY PROFILE                           ");
@@ -222,10 +247,11 @@ public class MainMenuRunner implements CommandLineRunner {
         System.out.println("ID:          " + currentUser.getId());
         System.out.println("Full Name:   " + currentUser.getFullName());
         System.out.println("Email:       " + currentUser.getEmail());
-        System.out.println("Phone:       " + (currentUser.getPhoneNumber() != null ? currentUser.getPhoneNumber() : "N/A"));
+        System.out.println(
+                "Phone:       " + (currentUser.getPhoneNumber() != null ? currentUser.getPhoneNumber() : "N/A"));
         System.out.println("Role:        " + currentUser.getRole());
         System.out.println("Status:      " + (currentUser.isActive() ? "Active" : "Inactive"));
-        
+
         if (currentUser instanceof Student s) {
             System.out.println("\n--- Student Details ---");
             System.out.println("Student ID:  " + (s.getStudentId() != null ? s.getStudentId() : "N/A"));
@@ -244,7 +270,7 @@ public class MainMenuRunner implements CommandLineRunner {
             System.out.println("\n--- Administrator Details ---");
             System.out.println("Admin Level: " + (a.getAdminLevel() != null ? a.getAdminLevel() : "N/A"));
         }
-        
+
         System.out.println();
     }
 }
