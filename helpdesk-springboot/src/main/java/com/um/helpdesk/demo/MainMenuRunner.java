@@ -47,7 +47,7 @@ public class MainMenuRunner implements CommandLineRunner {
 
         while (systemRunning) {
             if (!selectDemoUser(sc)) {
-                System.out.println("User selection failed. System terminated.");
+                System.out.println("System terminated.");
                 sc.close();
                 return;
             }
@@ -110,6 +110,10 @@ public class MainMenuRunner implements CommandLineRunner {
         try {
             choice = Integer.parseInt(sc.nextLine());
         } catch (NumberFormatException e) {}
+
+        if (choice == 0) {
+            return false;
+        }
 
         try {
             currentUser = switch (choice) {
