@@ -17,7 +17,12 @@
         <class>com.um.helpdesk.entity.Department</class>
         <class>com.um.helpdesk.entity.Ticket</class>
 
+        <exclude-unlisted-classes>false</exclude-unlisted-classes>
+
         <properties>
+            <!-- OSGi-specific: Use non-JTA datasource -->
+            <property name="hibernate.transaction.jta.platform" value="org.hibernate.service.jta.platform.internal.NoJtaPlatform"/>
+            <property name="hibernate.archive.autodetection" value="class"/>
             <!-- H2 Database Configuration -->
             <property name="javax.persistence.jdbc.driver" value="org.h2.Driver"/>
             <property name="javax.persistence.jdbc.url" value="jdbc:h2:mem:helpdesk;DB_CLOSE_DELAY=-1"/>

@@ -65,6 +65,20 @@
                         </Private-Package>
 
                         <Import-Package>
+                            !com.um.helpdesk.ticketassignment.repository,
+
+                            !com.sun.management,
+                            !com.sun.tools.javac,
+
+                            !org.codehaus.groovy.*,
+                            !com.ibm.icu.*,
+                            !org.apache.lucene.*,
+                            !org.locationtech.jts.*,
+                            !org.h2.mvstore.*,
+
+                            org.hibernate.proxy,
+                            javassist.util.proxy,
+
                             com.um.helpdesk.entity,
                             com.um.helpdesk.service,
                             org.osgi.framework,

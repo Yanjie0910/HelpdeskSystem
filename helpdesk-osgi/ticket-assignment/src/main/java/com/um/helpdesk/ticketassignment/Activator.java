@@ -9,11 +9,13 @@ import org.osgi.framework.ServiceRegistration;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
+import org.hibernate.jpa.HibernatePersistenceProvider;
 import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Scanner;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Activator implements BundleActivator {
 
@@ -31,7 +33,19 @@ public class Activator implements BundleActivator {
                 Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
 
                 System.out.println(">>> JPA: Initializing EntityManagerFactory...");
-                emf = Persistence.createEntityManagerFactory("helpdesk-pu");
+
+                // Use Hibernate provider directly to bypass Aries JPA
+                Map<String, String> properties = new HashMap<>();
+                properties.put("javax.persistence.jdbc.driver", "org.h2.Driver");
+                properties.put("javax.persistence.jdbc.url", "jdbc:h2:mem:helpdesk;DB_CLOSE_DELAY=-1");
+                properties.put("javax.persistence.jdbc.user", "sa");
+                properties.put("javax.persistence.jdbc.password", "");
+                properties.put("hibernate.dialect", "org.hibernate.dialect.H2Dialect");
+                properties.put("hibernate.hbm2ddl.auto", "create-drop");
+                properties.put("hibernate.show_sql", "false");
+
+                HibernatePersistenceProvider provider = new HibernatePersistenceProvider();
+                emf = provider.createEntityManagerFactory("helpdesk-pu", properties);
                 em = emf.createEntityManager();
                 System.out.println(">>> JPA: Initialized successfully.");
 
@@ -45,7 +59,10 @@ public class Activator implements BundleActivator {
 
                 initializeTestData(serviceImpl, em);
 
+                // Run console demo (works in Apache Felix, conflicts with Karaf console)
                 runConsoleDemo(serviceImpl, em);
+
+                System.out.println(">>> Ticket Assignment Component: Stopped.");
 
             } catch (Exception e) {
                 System.err.println("!!! ERROR in Ticket Assignment Activator: " + e.getMessage());
