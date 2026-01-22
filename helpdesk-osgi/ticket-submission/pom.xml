@@ -18,6 +18,7 @@
     <name>UM Helpdesk OSGi - Ticket Submission Component</name>
 
     <dependencies>
+        <!-- your original deps -->
         <dependency>
             <groupId>com.um.helpdesk.osgi</groupId>
             <artifactId>base-library</artifactId>
@@ -36,10 +37,19 @@
             <groupId>javax.persistence</groupId>
             <artifactId>javax.persistence-api</artifactId>
         </dependency>
+
+        <!-- ✅ TEST deps (JUnit 5) -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.2</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
         <plugins>
+            <!-- keep your OSGi bundle config -->
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
@@ -67,6 +77,17 @@
                             *
                         </Import-Package>
                     </instructions>
+                </configuration>
+            </plugin>
+
+            <!-- ✅ run JUnit 5 tests -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+                <configuration>
+                    <!-- avoid JPMS weirdness on Windows / JDK17 -->
+                    <useModulePath>false</useModulePath>
                 </configuration>
             </plugin>
         </plugins>
