@@ -67,6 +67,10 @@
                             !com.sun.tools.javac,
 
                             !org.codehaus.groovy.*,
+                            !com.ibm.icu.*,
+                            !org.apache.lucene.*,
+                            !org.locationtech.jts.*,
+                            !org.h2.mvstore.*,
 
                             org.hibernate.proxy,
                             javassist.util.proxy,
