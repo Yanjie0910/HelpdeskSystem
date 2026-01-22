@@ -11,6 +11,7 @@
         <module name="base-library" />
         <module name="user-management" />
         <module name="reporting-component" />
+        <module name="ticket-assignment" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
