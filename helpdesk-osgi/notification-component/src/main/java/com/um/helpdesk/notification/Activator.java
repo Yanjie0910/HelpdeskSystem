@@ -48,6 +48,8 @@ public class Activator implements BundleActivator {
                     System.out.println(">>> Running in standalone mode (no OSGi context).");
                 }
 
+                initializeMockData(em);
+
                 runConsoleDemo(serviceImpl);
 
             } catch (Exception e) {
@@ -57,6 +59,98 @@ public class Activator implements BundleActivator {
         }).start();
 
         System.out.println(">>> Notification Activator thread launched. Status will be ACTIVE soon.");
+    }
+
+    private void initializeMockData(EntityManager em) {
+        System.out.println(">>> JPA(Notification): Checking for mock data...");
+        try {
+            em.getTransaction().begin();
+
+            // 1. Create Users if they don't exist
+            if (em.find(User.class, 1L) == null) {
+                System.out.println(">>> Seeding Mock Users...");
+
+                // Admin
+                Administrator admin = new Administrator();
+                admin.setFullName("Dr. World");
+                admin.setEmail("admin@um.edu.my");
+                admin.setRole(UserRole.ADMIN);
+                admin.setPassword("admin123");
+                em.persist(admin);
+
+                // Student
+                Student student = new Student();
+                student.setFullName("Lily Tan");
+                student.setEmail("lily@student.um.edu.my");
+                student.setRole(UserRole.STUDENT);
+                student.setPassword("student123");
+                em.persist(student);
+
+                // Staff
+                Staff staff = new Staff();
+                staff.setFullName("Muthu");
+                staff.setEmail("muthu@um.edu.my");
+                staff.setRole(UserRole.STAFF);
+                staff.setPassword("staff123");
+                em.persist(staff);
+
+                // Technician
+                TechnicianSupportStaff tech = new TechnicianSupportStaff();
+                tech.setFullName("Bob Lee");
+                tech.setEmail("bob@um.edu.my");
+                tech.setRole(UserRole.TECHNICIAN);
+                tech.setPassword("tech123");
+                em.persist(tech);
+
+                // 2. Create Sample Notifications
+                System.out.println(">>> Seeding Mock Notifications...");
+
+                // For Student
+                Notification n1 = new Notification();
+                n1.setRecipient(student);
+                n1.setTitle("Welcome to Helpdesk");
+                n1.setMessage("Your account has been successfully created.");
+                n1.setType(NotificationType.TICKET_STATUS_CHANGED);
+                n1.setPriority(NotificationPriority.LOW);
+                n1.setCreatedAt(java.time.LocalDateTime.now().minusDays(2));
+                n1.setStatus(NotificationStatus.READ);
+                n1.setRead(true);
+                em.persist(n1);
+
+                Notification n2 = new Notification();
+                n2.setRecipient(student);
+                n2.setTitle("Ticket #101 Submitted");
+                n2.setMessage("Your request regarding 'WiFi Issues' has been received.");
+                n2.setType(NotificationType.TICKET_SUBMITTED);
+                n2.setPriority(NotificationPriority.NORMAL);
+                n2.setCreatedAt(java.time.LocalDateTime.now().minusHours(5));
+                n2.setStatus(NotificationStatus.DELIVERED);
+                em.persist(n2);
+
+                // For Technician
+                Notification n3 = new Notification();
+                n3.setRecipient(tech);
+                n3.setTitle("New Ticket Assigned: #101");
+                n3.setMessage("You have been assigned to Ticket #101 (WiFi Issues).");
+                n3.setType(NotificationType.TICKET_ASSIGNED);
+                n3.setPriority(NotificationPriority.HIGH);
+                n3.setCreatedAt(java.time.LocalDateTime.now().minusHours(4));
+                n3.setStatus(NotificationStatus.DELIVERED);
+                em.persist(n3);
+
+                System.out.println(">>> Mock Data Seeding Completed.");
+            } else {
+                System.out.println(">>> Mock data already exists. Skipping.");
+            }
+
+            em.getTransaction().commit();
+        } catch (Exception e) {
+            System.err.println("!!! Failed to seed mock data: " + e.getMessage());
+            if (em.getTransaction().isActive()) {
+                em.getTransaction().rollback();
+            }
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -182,9 +276,6 @@ public class Activator implements BundleActivator {
 
     private void displayRoleBasedMenu() {
         String roleName = isAdmin ? "ADMIN" : "USER";
-        // Note: Ideally we'd map "USER" to specific roles but for this demo plain
-        // "USER" or logic is fine.
-        // Actually, let's make it look like the requested output "Role: ADMIN"
 
         String userName = switch (currentUserId.intValue()) {
             case 1 -> "Dr. World";
@@ -194,7 +285,7 @@ public class Activator implements BundleActivator {
             default -> "User " + currentUserId;
         };
 
-        String displayRole = isAdmin ? "ADMIN" : "USER"; // Simplification for OSGi demo
+        String displayRole = isAdmin ? "ADMIN" : "USER";
 
         System.out.println("\n┌────────────────────────────────────────────────────────────┐");
         System.out.println("│  Logged in as: " + String.format("%-44s", userName) + " │");
