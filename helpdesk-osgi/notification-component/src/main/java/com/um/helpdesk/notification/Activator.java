@@ -153,6 +153,11 @@ public class Activator implements BundleActivator {
         }
     }
 
+    private String getEnvOrDefault(String key, String defaultValue) {
+        String value = System.getenv(key);
+        return (value != null) ? value : defaultValue;
+    }
+
     @Override
     public void stop(BundleContext context) throws Exception {
         running = false;
