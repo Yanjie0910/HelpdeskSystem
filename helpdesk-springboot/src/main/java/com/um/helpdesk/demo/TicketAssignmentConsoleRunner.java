@@ -46,9 +46,35 @@ public class TicketAssignmentConsoleRunner {
         System.out.println("════════════════════════════════════════════════════\n");
     }
 
+    public void routeTicketOnly(Scanner sc, User currentUser) {
+        System.out.println("\n════════════════════════════════════════════════════");
+        System.out.println("  FUNCTIONALITY 1: ROUTE TO DEPARTMENT ONLY");
+        System.out.println("════════════════════════════════════════════════════");
+
+        viewUnassignedTickets(sc, currentUser);
+
+        System.out.print("Enter Ticket ID to route (0 to cancel): ");
+        Long ticketId = sc.nextLong();
+        sc.nextLine();
+
+        if (ticketId == 0) {
+            System.out.println("Cancelled.\n");
+            return;
+        }
+
+        try {
+            Department dept = ticketService.routeTicketToDepartment(ticketId);
+            System.out.println("\n✓ Success!");
+            System.out.println("  Routed to: " + (dept != null ? dept.getName() : "Unknown"));
+            System.out.println();
+        } catch (Exception e) {
+            System.out.println("\n✗ Error: " + e.getMessage() + "\n");
+        }
+    }
+
     public void autoRouteTicket(Scanner sc, User currentUser) {
         System.out.println("\n════════════════════════════════════════════════════");
-        System.out.println("       FUNCTIONALITY 1: AUTO-ROUTE TICKET");
+        System.out.println("  FUNCTIONALITY 1: ROUTE AND ASSIGN TECHNICIAN");
         System.out.println("════════════════════════════════════════════════════");
 
         viewUnassignedTickets(sc, currentUser);
@@ -313,12 +339,15 @@ public class TicketAssignmentConsoleRunner {
     // ========== HELPER METHODS ==========
 
     private void viewUnassignedTickets(Scanner sc, User currentUser) {
-        System.out.println("\nUnassigned Tickets (OPEN status):\n");
+        System.out.println("\nTickets Available for Routing:\n");
 
-        List<Ticket> tickets = ticketService.getTicketsByStatus(TicketStatus.OPEN);
+        List<Ticket> tickets = ticketService.getAllTickets().stream()
+            .filter(t -> t.getAssignedTo() == null)  // Not assigned to any technician
+            .filter(t -> t.getStatus() != TicketStatus.CLOSED)  // Exclude closed tickets
+            .toList();
 
         if (tickets.isEmpty()) {
-            System.out.println("No unassigned tickets.");
+            System.out.println("No tickets available for routing.");
             return;
         }
 
@@ -347,5 +376,48 @@ public class TicketAssignmentConsoleRunner {
         }
 
         System.out.println("Submitted: " + ticket.getSubmittedAt());
+    }
+
+    // ========== HELPER VIEWS ==========
+
+    public void viewAllDepartments(Scanner sc, User currentUser) {
+        System.out.println("\n--- ALL DEPARTMENTS ---");
+        List<Department> departments = departmentRepository.findAll();
+        if (departments.isEmpty()) {
+            System.out.println("No departments found.");
+            return;
+        }
+        System.out.println("┌─────┬──────────────────┬──────────┐");
+        System.out.println("│ ID  │ Department Name  │   Code   │");
+        System.out.println("├─────┼──────────────────┼──────────┤");
+        for (Department d : departments) {
+            System.out.printf("│ %-3d │ %-16s │ %-8s │%n", d.getId(), d.getName(), d.getCode());
+        }
+        System.out.println("└─────┴──────────────────┴──────────┘\n");
+    }
+
+    public void viewAllTechnicians(Scanner sc, User currentUser) {
+        System.out.println("\n--- ALL TECHNICIANS ---");
+        List<User> allUsers = userRepository.findAll();
+        List<TechnicianSupportStaff> technicians = allUsers.stream()
+            .filter(u -> u instanceof TechnicianSupportStaff)
+            .map(u -> (TechnicianSupportStaff) u)
+            .toList();
+
+        if (technicians.isEmpty()) {
+            System.out.println("No technicians found.");
+            return;
+        }
+        System.out.println("┌─────┬─────────────────────┬──────────────────┬───────────────┐");
+        System.out.println("│ ID  │ Name                │ Email            │ Department    │");
+        System.out.println("├─────┼─────────────────────┼──────────────────┼───────────────┤");
+        for (TechnicianSupportStaff t : technicians) {
+            System.out.printf("│ %-3d │ %-19s │ %-16s │ %-13s │%n",
+                t.getId(),
+                t.getFullName(),
+                t.getEmail(),
+                t.getDepartment() != null ? t.getDepartment().getName() : "None");
+        }
+        System.out.println("└─────┴─────────────────────┴──────────────────┴───────────────┘\n");
     }
 }

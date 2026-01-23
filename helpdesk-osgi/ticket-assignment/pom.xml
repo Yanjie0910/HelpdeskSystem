@@ -21,7 +21,7 @@
             <groupId>com.um.helpdesk.osgi</groupId>
             <artifactId>base-library</artifactId>
             <version>${project.version}</version>
-            <scope>provided</scope>
+            <!-- Changed from 'provided' to 'compile' so launcher can access entities -->
         </dependency>
         <dependency>
             <groupId>org.osgi</groupId>
@@ -45,6 +45,26 @@
             <artifactId>org.apache.felix.framework</artifactId>
             <version>${felix.version}</version>
         </dependency>
+
+        <!-- Test dependencies -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>5.5.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <version>5.5.0</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -61,7 +81,8 @@
 
                         <Private-Package>
                             com.um.helpdesk.ticketassignment.impl,
-                            com.um.helpdesk.ticketassignment.repository
+                            com.um.helpdesk.ticketassignment.repository,
+                            com.um.helpdesk.ticketassignment.launcher
                         </Private-Package>
 
                         <Import-Package>
@@ -123,6 +144,19 @@
 
                         <Embed-Dependency>h2;scope=compile|runtime;inline=false</Embed-Dependency>
                     </instructions>
+                </configuration>
+            </plugin>
+
+            <!-- Exec plugin to run the launcher -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <mainClass>com.um.helpdesk.ticketassignment.launcher.TicketAssignmentLauncher</mainClass>
+                    <classpathScope>compile</classpathScope>
+                    <includeProjectDependencies>true</includeProjectDependencies>
+                    <includePluginDependencies>false</includePluginDependencies>
                 </configuration>
             </plugin>
         </plugins>
