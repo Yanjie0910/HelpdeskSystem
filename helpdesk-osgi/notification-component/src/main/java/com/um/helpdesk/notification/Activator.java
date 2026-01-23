@@ -21,7 +21,7 @@ public class Activator implements BundleActivator {
     private EntityManager em;
     private ServiceRegistration<NotificationService> serviceRegistration;
     private boolean running = true;
-    private Long currentUserId = 1L;  // Default to admin for demo
+    private Long currentUserId = 1L; // Default to admin for demo
     private boolean isAdmin = true;
 
     @Override
@@ -76,54 +76,88 @@ public class Activator implements BundleActivator {
 
     private void runConsoleDemo(NotificationService service) {
         Scanner sc = new Scanner(System.in);
+        boolean systemRunning = true;
 
-        // User selection
-        selectDemoUser(sc);
-
-        System.out.println("\n══════════════════════════════════════════════════════════");
-        System.out.println("         NOTIFICATION MODULE (OSGi)                       ");
-        System.out.println("══════════════════════════════════════════════════════════");
-        System.out.println("Current User ID: " + currentUserId + " | Role: " + (isAdmin ? "ADMIN" : "USER"));
-
-        boolean back = false;
-        while (!back && running) {
-            displayNotificationMenu();
-            System.out.print("Choose option: ");
-            try {
-                if (sc.hasNextInt()) {
-                    int choice = sc.nextInt();
-                    sc.nextLine();
-
-                    switch (choice) {
-                        case 1 -> manageNotifications(sc, service);
-                        case 2 -> automatedNotifications(sc, service);
-                        case 3 -> reminderEscalation(sc, service);
-                        case 4 -> deliveryManagement(sc, service);
-                        case 0 -> back = true;
-                        default -> System.out.println("\n❌ Invalid option.\n");
-                    }
-                } else {
-                    sc.nextLine();
-                }
-            } catch (Exception e) {
-                System.out.println("Error: " + e.getMessage());
+        while (systemRunning) {
+            // 1. Select User
+            boolean userSelected = selectDemoUser(sc);
+            if (!userSelected) {
+                System.out.println("System terminated.");
+                break;
             }
+
+            boolean running = true;
+            while (running) {
+                // 2. Show Role Header + Menu
+                displayRoleBasedMenu(); // Combined header + menu options
+                System.out.print("Choose option: ");
+
+                int choice = -1;
+                try {
+                    if (sc.hasNextLine()) {
+                        String line = sc.nextLine();
+                        if (!line.trim().isEmpty()) {
+                            choice = Integer.parseInt(line);
+                        }
+                    }
+                } catch (NumberFormatException e) {
+                    System.out.println("Invalid input.");
+                }
+
+                if (choice == 0) {
+                    running = false; // Exit Notification Menu -> Go to Session Ended
+                } else {
+                    handleMenuChoice(choice, sc, service);
+                }
+            }
+
+            // 3. Session Ended Menu
+            displaySessionEndedMenu();
+            System.out.print("Choose option: ");
+
+            int exitChoice = -1;
+            try {
+                if (sc.hasNextLine()) {
+                    String line = sc.nextLine();
+                    if (!line.trim().isEmpty()) {
+                        exitChoice = Integer.parseInt(line);
+                    }
+                }
+            } catch (NumberFormatException e) {
+            }
+
+            if (exitChoice == 0) {
+                systemRunning = false;
+                System.out.println("\n👋 Thank you for using UM Helpdesk System. Goodbye!");
+            }
+            // else (Option 1 or others) -> loops back to Select User
         }
     }
 
-    private void selectDemoUser(Scanner sc) {
+    private boolean selectDemoUser(Scanner sc) {
         System.out.println("\n┌────────────────────────────────────────────────────────────┐");
         System.out.println("│                   SELECT DEMO USER                         │");
         System.out.println("├────────────────────────────────────────────────────────────┤");
-        System.out.println("│  1. Admin (User ID: 1)                                     │");
-        System.out.println("│  2. Student (User ID: 2)                                   │");
-        System.out.println("│  3. Staff (User ID: 3)                                     │");
-        System.out.println("│  4. Technician (User ID: 4)                                │");
+        System.out.println("│  1. Admin - Dr. World                                      │");
+        System.out.println("│  2. Student - Lily Tan                                     │");
+        System.out.println("│  3. Staff - Muthu                                          │");
+        System.out.println("│  4. Technician - Bob Lee                                   │");
+        System.out.println("│  0. Exit                                                   │");
         System.out.println("└────────────────────────────────────────────────────────────┘");
         System.out.print("Choose user (1-4): ");
 
-        int choice = sc.nextInt();
-        sc.nextLine();
+        int choice = -1;
+        try {
+            if (sc.hasNextLine()) {
+                String line = sc.nextLine();
+                choice = Integer.parseInt(line);
+            }
+        } catch (NumberFormatException e) {
+            // ignore
+        }
+
+        if (choice == 0)
+            return false;
 
         switch (choice) {
             case 1 -> {
@@ -143,18 +177,68 @@ public class Activator implements BundleActivator {
                 isAdmin = true;
             }
         }
+        return true;
     }
 
-    private void displayNotificationMenu() {
-        System.out.println("\n═══════════════════════════════════════════════════════════");
-        System.out.println("              NOTIFICATION MENU                              ");
-        System.out.println("═══════════════════════════════════════════════════════════");
-        System.out.println("  1. Notification Management (CRUD)");
-        System.out.println("  2. Automated Event-Based Notifications");
-        System.out.println("  3. Reminder & Escalation System");
-        System.out.println("  4. Notification Delivery Management");
-        System.out.println("  0. Exit Notification Demo");
-        System.out.println("═══════════════════════════════════════════════════════════");
+    private void displayRoleBasedMenu() {
+        String roleName = isAdmin ? "ADMIN" : "USER";
+        // Note: Ideally we'd map "USER" to specific roles but for this demo plain
+        // "USER" or logic is fine.
+        // Actually, let's make it look like the requested output "Role: ADMIN"
+
+        String userName = switch (currentUserId.intValue()) {
+            case 1 -> "Dr. World";
+            case 2 -> "Lily Tan";
+            case 3 -> "Muthu";
+            case 4 -> "Bob Lee";
+            default -> "User " + currentUserId;
+        };
+
+        String displayRole = isAdmin ? "ADMIN" : "USER"; // Simplification for OSGi demo
+
+        System.out.println("\n┌────────────────────────────────────────────────────────────┐");
+        System.out.println("│  Logged in as: " + String.format("%-44s", userName) + " │");
+        System.out.println("│  Role: " + String.format("%-52s", displayRole) + " │");
+        System.out.println("├────────────────────────────────────────────────────────────┤");
+        System.out.println("│                   NOTIFICATION MENU                        │");
+        System.out.println("├────────────────────────────────────────────────────────────┤");
+        System.out.println("│  1. Notification Management (CRUD)                         │");
+        System.out.println("│  2. Automated Event-Based Notifications                    │");
+        System.out.println("│  3. Reminder & Escalation System                           │");
+        System.out.println("│  4. Notification Delivery Management                       │");
+        System.out.println("│  0.  Exit                                                  │");
+        System.out.println("└────────────────────────────────────────────────────────────┘");
+    }
+
+    private void displaySessionEndedMenu() {
+        String userName = switch (currentUserId.intValue()) {
+            case 1 -> "Dr. World";
+            case 2 -> "Lily Tan";
+            case 3 -> "Muthu";
+            case 4 -> "Bob Lee";
+            default -> "User " + currentUserId;
+        };
+
+        System.out.println("\n┌────────────────────────────────────────────────────────────┐");
+        System.out.println("│  Session ended for: " + String.format("%-39s", userName) + " │");
+        System.out.println("├────────────────────────────────────────────────────────────┤");
+        System.out.println("│  1. Switch to another user                                 │");
+        System.out.println("│  0. Exit system completely                                 │");
+        System.out.println("└────────────────────────────────────────────────────────────┘");
+    }
+
+    private void handleMenuChoice(int choice, Scanner sc, NotificationService service) {
+        try {
+            switch (choice) {
+                case 1 -> manageNotifications(sc, service);
+                case 2 -> automatedNotifications(sc, service);
+                case 3 -> reminderEscalation(sc, service);
+                case 4 -> deliveryManagement(sc, service);
+                default -> System.out.println("\n❌ Invalid option.\n");
+            }
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
     }
 
     // ========== FUNCTIONALITY 1: Notification Management (CRUD) ==========
@@ -188,10 +272,12 @@ public class Activator implements BundleActivator {
                 case 4 -> markAllAsRead(service);
                 case 5 -> deleteNotification(sc, service);
                 case 6 -> {
-                    if (isAdmin) viewAllNotifications(service);
+                    if (isAdmin)
+                        viewAllNotifications(service);
                 }
                 case 7 -> {
-                    if (isAdmin) createTestNotification(sc, service);
+                    if (isAdmin)
+                        createTestNotification(sc, service);
                 }
                 case 0 -> back = true;
                 default -> System.out.println("\n❌ Invalid option.\n");
@@ -685,7 +771,8 @@ public class Activator implements BundleActivator {
     }
 
     private String truncate(String str, int length) {
-        if (str == null) return "N/A";
+        if (str == null)
+            return "N/A";
         return str.length() > length ? str.substring(0, length - 3) + "..." : str;
     }
 }
