@@ -147,18 +147,23 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     public Ticket autoRouteAndAssign(Long ticketId) {
-        // First route to department
-        Department department = routeTicketToDepartment(ticketId);
+        Ticket ticket = getTicketById(ticketId);
 
+        // If ticket already has department, use it. Otherwise, route it.
+        Department department = ticket.getAssignedDepartment();
         if (department == null) {
-            throw new RuntimeException("Could not determine appropriate department for ticket");
+            department = routeTicketToDepartment(ticketId);
+            if (department == null) {
+                throw new RuntimeException("Could not determine appropriate department for ticket");
+            }
+        } else {
+            System.out.println(">>> Ticket #" + ticketId + " already assigned to department: " + department.getName());
         }
 
         // Find least busy technician in that department
         TechnicianSupportStaff technician = findLeastBusyTechnician(department.getId());
 
         if (technician != null) {
-            Ticket ticket = getTicketById(ticketId);
             ticket.setAssignedTo(technician);
             ticket.setAssignedAt(LocalDateTime.now());
             ticket.setStatus(TicketStatus.ASSIGNED);
@@ -167,7 +172,7 @@ public class TicketServiceImpl implements TicketService {
             return ticket;
         }
 
-        return getTicketById(ticketId);
+        return ticket;
     }
 
     @Override

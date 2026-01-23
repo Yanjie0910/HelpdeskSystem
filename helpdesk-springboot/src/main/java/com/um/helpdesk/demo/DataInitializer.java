@@ -83,6 +83,55 @@ public class DataInitializer implements CommandLineRunner {
         createTicket("WiFi Down", "Cannot connect to UM Guest", TicketPriority.HIGH, student);
         createTicket("Printer Jam", "Level 2 printer jammed", TicketPriority.LOW, staff);
 
+        // Create claimable tickets directly
+        Ticket t1 = new Ticket();
+        t1.setTitle("Laptop won't start");
+        t1.setDescription("My laptop shows black screen");
+        t1.setPriority(TicketPriority.HIGH);
+        t1.setSubmittedBy(student);
+        t1.setStatus(TicketStatus.OPEN);
+        t1.setAssignedDepartment(itDept);
+        t1.setSubmittedAt(LocalDateTime.now());
+        ticketRepository.save(t1);
+
+        Ticket t2 = new Ticket();
+        t2.setTitle("Password reset");
+        t2.setDescription("Forgot my password");
+        t2.setPriority(TicketPriority.MEDIUM);
+        t2.setSubmittedBy(staff);
+        t2.setStatus(TicketStatus.OPEN);
+        t2.setAssignedDepartment(itDept);
+        t2.setSubmittedAt(LocalDateTime.now());
+        ticketRepository.save(t2);
+
+        // More OPEN tickets for testing
+        Ticket t3 = new Ticket();
+        t3.setTitle("Software installation");
+        t3.setDescription("Need Office installed");
+        t3.setPriority(TicketPriority.LOW);
+        t3.setSubmittedBy(student);
+        t3.setStatus(TicketStatus.OPEN);
+        t3.setSubmittedAt(LocalDateTime.now());
+        ticketRepository.save(t3);
+
+        Ticket t4 = new Ticket();
+        t4.setTitle("Email not working");
+        t4.setDescription("Cannot send emails from Outlook");
+        t4.setPriority(TicketPriority.HIGH);
+        t4.setSubmittedBy(staff);
+        t4.setStatus(TicketStatus.OPEN);
+        t4.setSubmittedAt(LocalDateTime.now());
+        ticketRepository.save(t4);
+
+        Ticket t5 = new Ticket();
+        t5.setTitle("Broken chair");
+        t5.setDescription("Office chair broken, need replacement");
+        t5.setPriority(TicketPriority.MEDIUM);
+        t5.setSubmittedBy(student);
+        t5.setStatus(TicketStatus.OPEN);
+        t5.setSubmittedAt(LocalDateTime.now());
+        ticketRepository.save(t5);
+
         // --- 4. HISTORICAL DATA FOR REPORTING (TRENDS & FAILURES) ---
         createHistoricalData(student, staff, tech1);
 
@@ -96,6 +145,19 @@ public class DataInitializer implements CommandLineRunner {
         t.setPriority(prio);
         t.setSubmittedBy(user);
         ticketService.createTicket(t);
+    }
+
+    private void createClaimableTicket(String title, String desc, TicketPriority prio, User user, Department dept) {
+        Ticket t = new Ticket();
+        t.setTitle(title);
+        t.setDescription(desc);
+        t.setPriority(prio);
+        t.setSubmittedBy(user);
+        t.setStatus(TicketStatus.OPEN);
+        t.setAssignedDepartment(dept);  // Assigned to department
+        t.setAssignedTo(null);  // NOT assigned to any technician - claimable!
+        t.setSubmittedAt(LocalDateTime.now());
+        ticketRepository.save(t);
     }
 
     private void createHistoricalData(User student, User staff, TechnicianSupportStaff tech) {
@@ -119,22 +181,23 @@ public class DataInitializer implements CommandLineRunner {
         // FAILURE TEST: Urgent Ticket submitted 2 days ago (Open = Breach 24h SLA)
         Ticket failure = new Ticket();
         failure.setTitle("Server Room Overheat");
-        failure.setDescription("AC failure in server room. Critical!");
+        failure.setDescription("AC failure in server room. Critical! Temperature rising.");
+        failure.setCategory("Facilities");
         failure.setPriority(TicketPriority.URGENT);
         failure.setSubmittedBy(staff);
-        failure.setStatus(TicketStatus.OPEN); // Still open!
-        failure.setSubmittedAt(now.minusDays(2)); // 48 hours ago
-        ticketRepository.save(failure); // Direct save to bypass auto-timestamping in service if exists
+        failure.setStatus(TicketStatus.OPEN);
+        failure.setSubmittedAt(now.minusDays(2));
+        ticketRepository.save(failure);
 
         // FAILURE TEST: High Ticket submitted 4 days ago, resolved today (Took 96h > 48h SLA)
         Ticket lateResolve = new Ticket();
         lateResolve.setTitle("Database Corruption");
+        lateResolve.setDescription("Database server crashed and needs recovery");
+        lateResolve.setCategory("IT");
         lateResolve.setPriority(TicketPriority.HIGH);
         lateResolve.setSubmittedBy(staff);
-        lateResolve.setStatus(TicketStatus.CLOSED);
+        lateResolve.setStatus(TicketStatus.OPEN);
         lateResolve.setSubmittedAt(now.minusDays(4));
-        lateResolve.setResolvedAt(now);
-        lateResolve.setAssignedTo(tech);
         ticketRepository.save(lateResolve);
     }
 

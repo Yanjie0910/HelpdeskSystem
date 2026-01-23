@@ -9,13 +9,11 @@ import org.osgi.framework.ServiceRegistration;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
-import org.hibernate.jpa.HibernatePersistenceProvider;
+import javax.persistence.Persistence;
 import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Scanner;
-import java.util.HashMap;
-import java.util.Map;
 
 public class Activator implements BundleActivator {
 
@@ -33,29 +31,21 @@ public class Activator implements BundleActivator {
                 Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
 
                 System.out.println(">>> JPA: Initializing EntityManagerFactory...");
-
-                // Use Hibernate provider directly to bypass Aries JPA
-                Map<String, String> properties = new HashMap<>();
-                properties.put("javax.persistence.jdbc.driver", "org.h2.Driver");
-                properties.put("javax.persistence.jdbc.url", "jdbc:h2:mem:helpdesk;DB_CLOSE_DELAY=-1");
-                properties.put("javax.persistence.jdbc.user", "sa");
-                properties.put("javax.persistence.jdbc.password", "");
-                properties.put("hibernate.dialect", "org.hibernate.dialect.H2Dialect");
-                properties.put("hibernate.hbm2ddl.auto", "create-drop");
-                properties.put("hibernate.show_sql", "false");
-
-                HibernatePersistenceProvider provider = new HibernatePersistenceProvider();
-                emf = provider.createEntityManagerFactory("helpdesk-pu", properties);
+                emf = Persistence.createEntityManagerFactory("helpdesk-pu");
                 em = emf.createEntityManager();
                 System.out.println(">>> JPA: Initialized successfully.");
 
                 TicketServiceImpl serviceImpl = new TicketServiceImpl(em);
 
-                // Register OSGi Service
-                Dictionary<String, String> props = new Hashtable<>();
-                props.put("component", "ticket-assignment");
-                serviceRegistration = context.registerService(TicketService.class, serviceImpl, props);
-                System.out.println(">>> OSGi: TicketService registered.");
+                // Register OSGi Service (only if running in real OSGi container)
+                if (context != null) {
+                    Dictionary<String, String> props = new Hashtable<>();
+                    props.put("component", "ticket-assignment");
+                    serviceRegistration = context.registerService(TicketService.class, serviceImpl, props);
+                    System.out.println(">>> OSGi: TicketService registered.");
+                } else {
+                    System.out.println(">>> Running in standalone mode (no OSGi container).");
+                }
 
                 initializeTestData(serviceImpl, em);
 
@@ -242,6 +232,10 @@ public class Activator implements BundleActivator {
         System.out.println("║   10. View Technician Workload                       ║");
         System.out.println("║   11. View Department Workload                       ║");
         System.out.println("║                                                      ║");
+        System.out.println("║  HELPER VIEWS                                        ║");
+        System.out.println("║   12. View All Departments                           ║");
+        System.out.println("║   13. View All Technicians                           ║");
+        System.out.println("║                                                      ║");
         System.out.println("║    0. Exit Demo                                      ║");
         System.out.println("╚══════════════════════════════════════════════════════╝");
     }
@@ -260,6 +254,8 @@ public class Activator implements BundleActivator {
                 case 9 -> transferAndAssignTicket(service, sc);
                 case 10 -> viewTechnicianWorkload(service, em, sc);
                 case 11 -> viewDepartmentWorkload(service, em, sc);
+                case 12 -> viewAllDepartments(em);
+                case 13 -> viewAllTechnicians(em);
                 default -> System.out.println("Invalid option");
             }
         } catch (Exception e) {
@@ -413,5 +409,43 @@ public class Activator implements BundleActivator {
 
         int workload = service.getDepartmentWorkload(deptId);
         System.out.printf("Department: %s | Active Tickets: %d%n", dept.getName(), workload);
+    }
+
+    private void viewAllDepartments(EntityManager em) {
+        System.out.println("\n--- ALL DEPARTMENTS ---");
+        List<Department> departments = em.createQuery("SELECT d FROM Department d", Department.class).getResultList();
+        if (departments.isEmpty()) {
+            System.out.println("No departments found.");
+            return;
+        }
+        System.out.println("┌─────┬──────────────────┬──────────┐");
+        System.out.println("│ ID  │ Department Name  │   Code   │");
+        System.out.println("├─────┼──────────────────┼──────────┤");
+        for (Department d : departments) {
+            System.out.printf("│ %-3d │ %-16s │ %-8s │%n", d.getId(), d.getName(), d.getCode());
+        }
+        System.out.println("└─────┴──────────────────┴──────────┘");
+    }
+
+    private void viewAllTechnicians(EntityManager em) {
+        System.out.println("\n--- ALL TECHNICIANS ---");
+        List<TechnicianSupportStaff> technicians = em.createQuery(
+            "SELECT t FROM TechnicianSupportStaff t", TechnicianSupportStaff.class
+        ).getResultList();
+        if (technicians.isEmpty()) {
+            System.out.println("No technicians found.");
+            return;
+        }
+        System.out.println("┌─────┬─────────────────────┬──────────────────┬───────────────┐");
+        System.out.println("│ ID  │ Name                │ Email            │ Department    │");
+        System.out.println("├─────┼─────────────────────┼──────────────────┼───────────────┤");
+        for (TechnicianSupportStaff t : technicians) {
+            System.out.printf("│ %-3d │ %-19s │ %-16s │ %-13s │%n",
+                t.getId(),
+                t.getFullName(),
+                t.getEmail(),
+                t.getDepartment() != null ? t.getDepartment().getName() : "None");
+        }
+        System.out.println("└─────┴─────────────────────┴──────────────────┴───────────────┘");
     }
 }

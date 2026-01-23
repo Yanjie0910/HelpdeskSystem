@@ -204,9 +204,14 @@ public class MainMenuRunner implements CommandLineRunner {
         System.out.println("│  4. Reassign Ticket (Internal Re-assignment)               │");
         System.out.println("│  5. Transfer to Other Department                           │");
         System.out.println("│  6. View Assignment History                                │");
-        System.out.println("│  7. Auto-Route Ticket                                      │");
-        System.out.println("│  8. My Profile                                             │");
-        System.out.println("│  9. My Notifications                                       │");
+        System.out.println("│  7. Route to Department Only (F1)                          │");
+        System.out.println("│  8. Route and Assign Technician (F1)                       │");
+        System.out.println("│  9. My Profile                                             │");
+        System.out.println("│ 10. My Notifications                                       │");
+        System.out.println("│                                                            │");
+        System.out.println("│  HELPER VIEWS:                                             │");
+        System.out.println("│ 11. View All Departments                                   │");
+        System.out.println("│ 12. View All Technicians                                   │");
     }
 
     private boolean handleTechnicianMenu(int choice, Scanner sc) {
@@ -217,9 +222,12 @@ public class MainMenuRunner implements CommandLineRunner {
             case 4 -> ticketAssignmentModule.reassignTicket(sc, currentUser);
             case 5 -> ticketAssignmentModule.transferTicket(sc, currentUser);
             case 6 -> ticketAssignmentModule.viewAssignmentHistory(sc, currentUser);
-            case 7 -> ticketAssignmentModule.autoRouteTicket(sc, currentUser);
-            case 8 -> viewMyProfile();
-            case 9 -> notificationModule.runNotificationManagement(sc, currentUser);
+            case 7 -> ticketAssignmentModule.routeTicketOnly(sc, currentUser);
+            case 8 -> ticketAssignmentModule.autoRouteTicket(sc, currentUser);
+            case 9 -> viewMyProfile();
+            case 10 -> notificationModule.runNotificationManagement(sc, currentUser);
+            case 11 -> ticketAssignmentModule.viewAllDepartments(sc, currentUser);
+            case 12 -> ticketAssignmentModule.viewAllTechnicians(sc, currentUser);
             case 0 -> { return false; }
             default -> System.out.println("\nInvalid option.\n");
         }

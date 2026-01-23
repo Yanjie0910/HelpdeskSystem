@@ -46,6 +46,7 @@ public class TicketServiceImpl implements TicketService {
         keywords.put("air conditioning", "FACILITIES");
         keywords.put("lighting", "FACILITIES");
         keywords.put("cleaning", "FACILITIES");
+        keywords.put("projector", "FACILITIES");
 
         // Finance keywords
         keywords.put("payment", "FINANCE");
@@ -333,6 +334,12 @@ public class TicketServiceImpl implements TicketService {
         }
 
         Department oldDepartment = ticket.getAssignedDepartment();
+
+        // Check if already assigned to this department
+        if (oldDepartment != null && oldDepartment.getId().equals(newDepartmentId)) {
+            throw new RuntimeException("Ticket is already assigned to this department");
+        }
+
         TechnicianSupportStaff oldTechnician = ticket.getAssignedTo();
 
         // Transfer to new department
